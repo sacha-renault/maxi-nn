@@ -1,3 +1,4 @@
+#pragma once
 #include "../../include/MaxiNn.hpp"
 
 using namespace nn::tensor;

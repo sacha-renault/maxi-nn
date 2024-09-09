@@ -2,6 +2,7 @@
 #include <vector>
 #include <memory>
 #include <eigen3/Eigen/Dense>
+#include "../../src/internal/Operation.hpp"
 
 namespace nn::tensor
 {
@@ -25,6 +26,9 @@ namespace nn::tensor
 
         // private functions
         int computeIndex(const std::vector<int>& multi_dim_index) const;
+
+        // backward function
+        nn::Operation::BackwardFunc<T> backward_;
     public:
         ~Tensor() = default;
         Tensor();
@@ -36,6 +40,7 @@ namespace nn::tensor
         void resetGrad();
         void addChild(const Tensor<T>& child);
         void backward();
+        void setBackward(nn::Operation::BackwardFunc<T> func);
 
         // values
         void setValues(Eigen::Matrix<T, Eigen::Dynamic, 1> new_values);

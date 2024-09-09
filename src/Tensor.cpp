@@ -97,6 +97,18 @@ namespace nn::tensor
         }
     }
 
+    template <typename T>
+    void Tensor<T>::backward() {
+        if (backward_) {
+            // backward_();
+        }
+    }
+
+    template <typename T>
+    void Tensor<T>::setBackward(nn::Operation::BackwardFunc<T> func) {
+        backward_ = func;
+    }
+
     // explicit instanciation of the class
     template class Tensor<float>;
 }
