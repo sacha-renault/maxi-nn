@@ -1,4 +1,5 @@
 #include "../include/MaxiNn.hpp"
+#include <iostream>
 
 namespace nn::tensor
 { 
@@ -57,6 +58,13 @@ namespace nn::tensor
     }
 
     template <typename T>
+    void Tensor<T>::setOnesGrad() {
+        if (requires_grad_) {
+            grads_.setConstant(1);
+        }
+    }
+
+    template <typename T>
     void Tensor<T>::addChild(const Tensor<T>& child) {
         children_.push_back(std::make_shared<Tensor>(child));
     }
@@ -100,7 +108,33 @@ namespace nn::tensor
     template <typename T>
     void Tensor<T>::backward() {
         if (backward_) {
-            // backward_();
+            int numChildren = children_.size();
+            int numRows = values_.rows();
+
+            // Matrix to store mapped columns
+            Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic> childrenValues(numRows, numChildren);
+
+            // Use Eigen::Map to reference each child's values without copying
+            for (int i = 0; i < numChildren; ++i) {
+                Eigen::Map<Eigen::Matrix<T, Eigen::Dynamic, 1>> childMap(children_[i]->values_.data(), numRows);
+                childrenValues.col(i) = childMap;
+            }
+
+            // compute the gradient
+            auto grads = backward_(childrenValues, values_, grads_);
+
+            // Propagate the gradients to each child
+            for (int i = 0; i < numChildren; ++i) {
+                children_[i]->grads_ += grads.col(i);
+            }
+
+            // show grads for every childs
+            for (int i = 0; i < numChildren; ++i) {
+                std::cout << "Child n°" << i << std::endl;
+                for (int j = 0 ; j < children_[i]->size() ; ++j) {
+                    std::cout << children_[i]->grads_(j) << std::endl;
+                }
+            }
         }
     }
 

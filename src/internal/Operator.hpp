@@ -1,5 +1,6 @@
 #pragma once
 #include "../../include/MaxiNn.hpp"
+#include "Operation.hpp"
 
 using namespace nn::tensor;
 
@@ -16,6 +17,7 @@ Tensor<T> operator+(Tensor<T>& lhs, Tensor<T>& rhs) {
     Tensor<T> result(dims, valResult);
     result.addChild(lhs);
     result.addChild(rhs);
+    result.setBackward(nn::Operation::addBackward<T>);
     return result;
 }
 
@@ -32,6 +34,7 @@ Tensor<T> operator*(Tensor<T>& lhs, Tensor<T>& rhs) {
     Tensor<T> result(dims, valResult);
     result.addChild(lhs);
     result.addChild(rhs);
+    result.setBackward(nn::Operation::mulBackward<T>);
     return result;
 }
 

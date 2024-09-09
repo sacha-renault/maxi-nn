@@ -9,7 +9,7 @@ namespace nn::tensor
 
     template <typename T>
     class Tensor{
-    private:
+    protected:
         // values and grads
         Eigen::Matrix<T, Eigen::Dynamic, 1> values_; 
         Eigen::Matrix<T, Eigen::Dynamic, 1> grads_;
@@ -38,6 +38,7 @@ namespace nn::tensor
         // gradient
         void accumulateGrad(const Eigen::Matrix<T, Eigen::Dynamic, 1>& add_grad);
         void resetGrad();
+        void setOnesGrad();
         void addChild(const Tensor<T>& child);
         void backward();
         void setBackward(nn::Operation::BackwardFunc<T> func);
