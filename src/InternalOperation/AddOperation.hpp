@@ -18,14 +18,14 @@ namespace nn::Operation
             Eigen::Matrix<T, Eigen::Dynamic, 1>& parent_grads
         ) override {
             // Create a matrix to store the gradients of the children
-            Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic> childrenGrads(children_values.rows(), children_values.cols());
+            Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic> children_grads(children_values.rows(), children_values.cols());
 
             // Propagate the parent's gradient to each child
             for (int i = 0; i < children_values.cols(); ++i) {
-                childrenGrads.col(i) = parent_grads;  // For add, the gradient is simply passed through
+                children_grads.col(i) = parent_grads;  // For add, the gradient is simply passed through
             }
 
-            return childrenGrads;
+            return children_grads;
         }
     };
 } // namespace nn::Operation

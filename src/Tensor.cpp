@@ -150,6 +150,11 @@ namespace nn::tensor
     }
 
     template <typename T>
+    const Eigen::Matrix<T, Eigen::Dynamic, 1>& Tensor<T>::getValues() {
+        return values_;
+    }
+
+    template <typename T>
     void Tensor<T>::resetGrad() {
         if (requires_grad_) {
             grads_.setConstant(0);

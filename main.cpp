@@ -13,7 +13,8 @@ int main() {
     t3->fill(3);
     (*t1)[{0,0}] = 5;
 
-    auto t5 = t1 * t2 - t3;
+    auto t5 = math::tanh(t1 * t2 - t3);
+    // auto t5 = t1 * t2 - t3;
 
     auto graph = graph::FComputeGraph(t5);
     graph.backward();
