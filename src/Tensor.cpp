@@ -196,7 +196,7 @@ namespace nn::tensor
 
     template <typename T>
     int Tensor<T>::size() const {
-        return dimensions_.size();
+        return total_size_;
     }
 
     template <typename T>
@@ -224,7 +224,7 @@ namespace nn::tensor
     void Tensor<T>::backward() {
         if (stream_ptr) {
             int numChildren = children_.size();
-            int numRows = values_.rows();
+            int numRows = children_[0]->size();
 
             // Matrix to store mapped columns
             Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic> children_values(numRows, numChildren);
