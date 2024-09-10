@@ -43,6 +43,7 @@ namespace nn::tensor
 
         // gradient
         void accumulateGrad(const Eigen::Matrix<T, Eigen::Dynamic, 1>& add_grad);
+        void setGrad(Eigen::Matrix<T, Eigen::Dynamic, 1> grads);
         void resetGrad();
         void setOnesGrad();
         void addChild(std::shared_ptr<Tensor<T>> child);

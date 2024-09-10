@@ -155,6 +155,11 @@ namespace nn::tensor
     }
 
     template <typename T>
+    void Tensor<T>::setGrad(Eigen::Matrix<T, Eigen::Dynamic, 1> grads) {
+        grads_ = std::move(grads);
+    }
+
+    template <typename T>
     void Tensor<T>::resetGrad() {
         if (requires_grad_) {
             grads_.setConstant(0);
