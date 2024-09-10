@@ -5,17 +5,14 @@
 using namespace nn;
 
 int main() {
-    auto t1 = tensor::FTensor::create({2, 2}, true);
-    auto t2 = tensor::FTensor::create({2, 2}, true);
-    auto t3 = tensor::FTensor::create({2, 2}, true);
-    t1->fill(1);
-    t2->fill(2);
-    t3->fill(3);
-    (*t1)[{0,0}] = 5;
+    auto t1 = tensor::FTensor::random({2, 2});
+    auto t2 = tensor::FTensor::random({2, 2});
+    auto t3 = tensor::FTensor::normal({2, 2});
+    (*t1)[{0,0}] = 0;
 
     auto y = FTensor::create({2,2}, true);
     y->fill(-1);
-    (*y)[{0,0}] = 1;
+    (*y).getItem({0,0}) = 1;
 
     auto t5 = math::tanh(t1 * t2 - t3);
     auto t7 = loss::meanSquaredError(t5, y);
@@ -25,6 +22,7 @@ int main() {
     graph.backward();
 
     t7->display();
+    y->display();
 
     t5->displayGrad();
     t3->displayGrad();

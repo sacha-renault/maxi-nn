@@ -1,5 +1,6 @@
-#include "../include/MaxiNn.hpp"
+#include <random>
 #include <iostream>
+#include "../include/MaxiNn.hpp"
 
 namespace nn::tensor
 {
@@ -57,6 +58,42 @@ namespace nn::tensor
     template <typename T>
     std::shared_ptr<Tensor<T>> Tensor<T>::create(std::vector<int> dim, Eigen::Matrix<T, Eigen::Dynamic, 1> values, std::shared_ptr<nn::Operation::IOperation<T>> stream, bool requires_grad) {
         return std::shared_ptr<Tensor<T>>(new Tensor<T>(dim, values, stream, requires_grad));
+    }
+
+    template <typename T>
+    std::shared_ptr<Tensor<T>> Tensor<T>::zeros(std::vector<int> dim, bool requires_grad) {
+        auto new_tensor = Tensor::create(dim, requires_grad);
+        Eigen::Matrix<T, Eigen::Dynamic, 1> values = Eigen::Matrix<T, Eigen::Dynamic, 1>::Zero(new_tensor->size());
+        new_tensor->fill(values);
+        return new_tensor;
+    }
+
+    template <typename T>
+    std::shared_ptr<Tensor<T>> Tensor<T>::ones(std::vector<int> dim, bool requires_grad) {
+        auto new_tensor = Tensor::create(dim, requires_grad);
+        Eigen::Matrix<T, Eigen::Dynamic, 1> values = Eigen::Matrix<T, Eigen::Dynamic, 1>::Ones(new_tensor->size());
+        new_tensor->fill(values);
+        return new_tensor;
+    }
+
+    template <typename T>
+    std::shared_ptr<Tensor<T>> Tensor<T>::random(std::vector<int> dim, T min, T max, bool requires_grad) {
+        auto new_tensor = Tensor::create(dim, requires_grad);
+        Eigen::Matrix<T, Eigen::Dynamic, 1> values = Eigen::Matrix<T, Eigen::Dynamic, 1>::Random(new_tensor->size());
+        values = (max - min) * (values.array() + 1.0) / 2.0 + min;  // Scale and shift to [min, max]
+        new_tensor->fill(values);
+        return new_tensor;
+    }
+
+    template <typename T>
+    std::shared_ptr<Tensor<T>> Tensor<T>::normal(std::vector<int> dim, T mean, T stddev, bool requires_grad) {
+        std::random_device rd;
+        std::mt19937 gen(rd());
+        std::normal_distribution<T> dist(mean, stddev);
+        auto new_tensor = Tensor::create(dim, requires_grad);
+        Eigen::Matrix<T, Eigen::Dynamic, 1> values = Eigen::Matrix<T, Eigen::Dynamic, 1>::NullaryExpr(new_tensor->size(), [&]() { return dist(gen); });
+        new_tensor->fill(values);
+        return new_tensor;
     }
 
     template <typename T>
@@ -147,6 +184,11 @@ namespace nn::tensor
     template <typename T>
     T& Tensor<T>::operator[](const std::vector<int>& multi_dim_index) {
         return values_(computeIndex(multi_dim_index));
+    }
+
+    template <typename T>
+    T& Tensor<T>::getItem(const std::vector<int>& multi_dim_index) {
+        return (*this)[multi_dim_index];
     }
 
     template <typename T>

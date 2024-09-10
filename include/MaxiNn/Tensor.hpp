@@ -36,10 +36,15 @@ namespace nn::tensor
         Tensor(std::vector<int> dim, Eigen::Matrix<T, Eigen::Dynamic, 1> values, bool requires_grad = true);
         Tensor(std::vector<int> dim, Eigen::Matrix<T, Eigen::Dynamic, 1> values, std::shared_ptr<nn::Operation::IOperation<T>> stream, bool requires_grad = true);
     public:
+        // static factory method
         static std::shared_ptr<Tensor<T>> create();
         static std::shared_ptr<Tensor<T>> create(std::vector<int> dim, bool requires_grad = true);
         static std::shared_ptr<Tensor<T>> create(std::vector<int> dim, Eigen::Matrix<T, Eigen::Dynamic, 1> values, bool requires_grad = true);
         static std::shared_ptr<Tensor<T>> create(std::vector<int> dim, Eigen::Matrix<T, Eigen::Dynamic, 1> values, std::shared_ptr<nn::Operation::IOperation<T>> stream, bool requires_grad = true);
+        static std::shared_ptr<Tensor<T>> zeros(std::vector<int> dim, bool requires_grad = true);
+        static std::shared_ptr<Tensor<T>> ones(std::vector<int> dim, bool requires_grad = true);
+        static std::shared_ptr<Tensor<T>> random(std::vector<int> dim, T min = 0, T max = 1, bool requires_grad = true);
+        static std::shared_ptr<Tensor<T>> normal(std::vector<int> dim, T mean = 0, T stddev = 1, bool requires_grad = true);
 
         // gradient
         void accumulateGrad(const Eigen::Matrix<T, Eigen::Dynamic, 1>& add_grad);
@@ -58,8 +63,9 @@ namespace nn::tensor
         const Eigen::Matrix<T, Eigen::Dynamic, 1>& getValues() const;
         void fill(T value);
         void fill(Eigen::Matrix<T, Eigen::Dynamic, 1> values);
-        T& operator[](const std::vector<int>& multi_dim_index);
         const Eigen::Matrix<T, Eigen::Dynamic, 1>& getValues();
+        T& operator[](const std::vector<int>& multi_dim_index);
+        T& getItem(const std::vector<int>& multi_dim_index);
 
         // size etc...
         int size() const;

@@ -42,7 +42,7 @@ std::shared_ptr<Tensor<T>> operator*(std::shared_ptr<Tensor<T>> lhs, T rhst) {
 
     // Create a new Tensor for the scalar value
     auto rhs = Tensor<T>::create(dims);
-    rhs->getValues().setConstant(rhst);  // Fill rhs tensor with the scalar value
+    rhs->fill(rhst);  // Fill rhs tensor with the scalar value
 
     // Perform element-wise multiplication
     Eigen::Matrix<T, Eigen::Dynamic, 1> valResult = (lhs->getValues().array() * rhs->getValues().array()).eval();
