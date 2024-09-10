@@ -169,6 +169,12 @@ namespace nn::tensor
     }
 
     template <typename T>
+    const std::vector<std::shared_ptr<Tensor<T>>>& Tensor<T>::getChildren() const
+    {
+        return children_;
+    };
+
+    template <typename T>
     void Tensor<T>::setValues(Eigen::Matrix<T, Eigen::Dynamic, 1> new_values) {
         values_ = new_values; // copy into values_
     }

@@ -46,6 +46,7 @@ namespace nn::tensor
         void resetGrad();
         void setOnesGrad();
         void addChild(std::shared_ptr<Tensor<T>> child);
+        const std::vector<std::shared_ptr<Tensor<T>>>& getChildren() const;
 
         // graph computations
         void backward();
