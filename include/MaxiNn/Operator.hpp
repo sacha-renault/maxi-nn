@@ -11,7 +11,7 @@ std::shared_ptr<Tensor<T>> operator+(std::shared_ptr<Tensor<T>> lhs, std::shared
     }
 
     // Create a new Tensor for the result of the addition
-    std::vector<int> dims = lhs->shape();  // Make sure this is a vector
+    std::vector<int> dims = lhs->shape();
     Eigen::Matrix<T, Eigen::Dynamic, 1> valResult = (lhs->getValues() + rhs->getValues()).eval();
     std::shared_ptr<Tensor<T>> result = Tensor<T>::create(dims, valResult, std::make_shared<nn::Operation::AddOperation<T>>());
     result->addChild(lhs);
@@ -27,12 +27,39 @@ std::shared_ptr<Tensor<T>> operator*(std::shared_ptr<Tensor<T>> lhs, std::shared
     }
 
     // Create a new Tensor for the result of the addition
-    std::vector<int> dims = lhs->shape();  // Make sure this is a vector
+    std::vector<int> dims = lhs->shape();
     Eigen::Matrix<T, Eigen::Dynamic, 1> valResult = (lhs->getValues().array() * rhs->getValues().array()).eval();
     std::shared_ptr<Tensor<T>> result = Tensor<T>::create(dims, valResult, std::make_shared<nn::Operation::MulOperation<T>>());
     result->addChild(lhs);
     result->addChild(rhs);
     return result;
+}
+
+template <typename T>
+std::shared_ptr<Tensor<T>> operator*(std::shared_ptr<Tensor<T>> lhs, T rhst) {
+    // Get the dimensions of the lhs tensor
+    std::vector<int> dims = lhs->shape();
+
+    // Create a new Tensor for the scalar value
+    auto rhs = Tensor<T>::create(dims);
+    rhs->getValues().setConstant(rhst);  // Fill rhs tensor with the scalar value
+
+    // Perform element-wise multiplication
+    Eigen::Matrix<T, Eigen::Dynamic, 1> valResult = (lhs->getValues().array() * rhs->getValues().array()).eval();
+
+    // Create the result tensor with the computed values
+    std::shared_ptr<Tensor<T>> result = Tensor<T>::create(dims, valResult, std::make_shared<nn::Operation::MulOperation<T>>());
+
+    // Add lhs and rhs as children to the result tensor
+    result->addChild(lhs);
+    result->addChild(rhs);
+
+    return result;
+}
+
+template <typename T>
+std::shared_ptr<Tensor<T>> operator*(T lhst, std::shared_ptr<Tensor<T>> rhs) {
+    return operator*<T>(rhs, lhst);
 }
 
 template <typename T>
@@ -43,7 +70,7 @@ std::shared_ptr<Tensor<T>> operator-(std::shared_ptr<Tensor<T>> lhs, std::shared
     }
 
     // Create a new Tensor for the result of the addition
-    std::vector<int> dims = lhs->shape();  // Make sure this is a vector
+    std::vector<int> dims = lhs->shape();
     Eigen::Matrix<T, Eigen::Dynamic, 1> valResult = (lhs->getValues().array() - rhs->getValues().array()).eval();
     std::shared_ptr<Tensor<T>> result = Tensor<T>::create(dims, valResult, std::make_shared<nn::Operation::SubOperation<T>>());
     result->addChild(lhs);
@@ -59,10 +86,16 @@ std::shared_ptr<Tensor<T>> operator/(std::shared_ptr<Tensor<T>> lhs, std::shared
     }
 
     // Create a new Tensor for the result of the division
-    std::vector<int> dims = lhs->shape();  // Make sure this is a vector
+    std::vector<int> dims = lhs->shape();
     Eigen::Matrix<T, Eigen::Dynamic, 1> valResult = (lhs->getValues().array() / rhs->getValues().array()).eval();
     std::shared_ptr<Tensor<T>> result = Tensor<T>::create(dims, valResult, std::make_shared<nn::Operation::DivOperation<T>>());
     result->addChild(lhs);
     result->addChild(rhs);
     return result;
 }
+
+template <typename T>
+std::shared_ptr<Tensor<T>> operator/(std::shared_ptr<Tensor<T>> lhs, T rhst) {
+    return operator*<T>(lhs, 1 / rhst);
+}
+
