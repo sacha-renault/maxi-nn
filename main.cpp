@@ -1,18 +1,23 @@
 #include "include/MaxiNn.hpp"
-#include "src/internal/Operator.hpp"
+#include "src/InternalOperation/InternalOperation.hpp"
 #include <iostream>
 
 int main() {
-    auto t1 = nn::tensor::FTensor({2, 2}, true);
-    auto t2 = nn::tensor::FTensor({2, 2}, true);
+    nn::tensor::FTensor t1({2, 2}, true);
+    nn::tensor::FTensor t2({2, 2}, true);
+    nn::tensor::FTensor t3({2, 2}, true);
     t1.fill(1);
     t2.fill(2);
+    t3.fill(3);
     t1[{0,0}] = 5;
 
-    auto t3 = t1 * t2;
-    
-    t3.setOnesGrad();
-    t3.backward();
+    auto t4 = (t1 - t2);
+    auto t5 = t4 * t3;
+
+    t5.setOnesGrad();
+    t5.backward();
+
+    t5.display();
 
     return 0;
 }

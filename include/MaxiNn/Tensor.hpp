@@ -2,16 +2,15 @@
 #include <vector>
 #include <memory>
 #include <eigen3/Eigen/Dense>
-#include "../../src/internal/Operation.hpp"
+#include "../../src/InternalOperation/InternalOperation.hpp"
 
 namespace nn::tensor
 {
-
     template <typename T>
     class Tensor{
     protected:
         // values and grads
-        Eigen::Matrix<T, Eigen::Dynamic, 1> values_; 
+        Eigen::Matrix<T, Eigen::Dynamic, 1> values_;
         Eigen::Matrix<T, Eigen::Dynamic, 1> grads_;
 
         // bools
@@ -24,24 +23,27 @@ namespace nn::tensor
         // children
         std::vector<std::shared_ptr<Tensor>> children_;
 
+        // backward function
+        std::shared_ptr<nn::Operation::IOperation<T>> stream_ptr;
+
         // private functions
         int computeIndex(const std::vector<int>& multi_dim_index) const;
-
-        // backward function
-        nn::Operation::BackwardFunc<T> backward_;
+        void displayInternal(const Eigen::Matrix<T, Eigen::Dynamic, 1>& displayable) const;
     public:
-        ~Tensor() = default;
         Tensor();
         Tensor(std::vector<int> dim, bool requires_grad = true);
         Tensor(std::vector<int> dim, Eigen::Matrix<T, Eigen::Dynamic, 1> values, bool requires_grad = true);
+        Tensor(std::vector<int> dim, Eigen::Matrix<T, Eigen::Dynamic, 1> values, std::shared_ptr<nn::Operation::IOperation<T>> stream, bool requires_grad = true);
 
         // gradient
         void accumulateGrad(const Eigen::Matrix<T, Eigen::Dynamic, 1>& add_grad);
         void resetGrad();
         void setOnesGrad();
         void addChild(const Tensor<T>& child);
+
+        // graph computations
         void backward();
-        void setBackward(nn::Operation::BackwardFunc<T> func);
+        void forward();
 
         // values
         void setValues(Eigen::Matrix<T, Eigen::Dynamic, 1> new_values);
@@ -53,6 +55,10 @@ namespace nn::tensor
         int size() const;
         std::vector<int> shape() const;
         void reshape(std::vector<int> dim);
+
+        // for user
+        void display() const;
+        void displayGrad() const;
     };
 
     // name the float tensor

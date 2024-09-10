@@ -2,7 +2,7 @@
 #include <iostream>
 
 namespace nn::tensor
-{ 
+{
     template <typename T>
     Tensor<T>::Tensor() : total_size_(1), values_(0){}
 
@@ -15,7 +15,7 @@ namespace nn::tensor
         // init values with empty array
         values_ = Eigen::Matrix<T, Eigen::Dynamic, 1>(total_size_);
 
-        // copy dimension into internal 
+        // copy dimension into internal
         dimensions_ = dims;
 
         // only allocate grad if required
@@ -26,9 +26,17 @@ namespace nn::tensor
     }
 
     template <typename T>
-    Tensor<T>::Tensor(std::vector<int> dim, Eigen::Matrix<T, Eigen::Dynamic, 1> values, bool requires_grad) 
+    Tensor<T>::Tensor(std::vector<int> dim, Eigen::Matrix<T, Eigen::Dynamic, 1> values, bool requires_grad)
         : Tensor<T>(dim, requires_grad) {
         values_ = values; // copy values
+        stream_ptr = nullptr; // no registered operation
+    }
+
+    template <typename T>
+    Tensor<T>::Tensor(std::vector<int> dim, Eigen::Matrix<T, Eigen::Dynamic, 1> values, std::shared_ptr<nn::Operation::IOperation<T>> stream, bool requires_grad)
+        : Tensor<T>(dim, requires_grad) {
+        values_ = values; // copy values
+        stream_ptr = stream;
     }
 
     template <typename T>
@@ -43,6 +51,71 @@ namespace nn::tensor
             multiplier *= dimensions_[i];
         }
         return index;
+    }
+
+    template <typename T>
+    void Tensor<T>::displayInternal(const Eigen::Matrix<T, Eigen::Dynamic, 1>& displayable) const {
+        int numDims = dimensions_.size();
+
+        if (numDims == 1) {
+            std::cout << "[ ";
+            for (int i = 0; i < displayable.rows(); ++i) {
+                std::cout << displayable(i, 0);
+                if (i < displayable.rows() - 1) std::cout << ", ";
+            }
+            std::cout << " ]" << std::endl;
+        } else if (numDims == 2) {
+            std::cout << "[" << std::endl;
+            for (int i = 0; i < displayable.rows(); ++i) {
+                std::cout << "    [ ";
+                for (int j = 0; j < displayable.cols(); ++j) {
+                    std::cout << displayable(i, j);
+                    if (j < displayable.cols() - 1) std::cout << ", ";
+                }
+                std::cout << " ]" << std::endl;
+            }
+            std::cout << "]" << std::endl;
+        } else {
+            // For 3D or higher dimensions, we'll recursively print the slices.
+            std::function<void(const Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic>&, int)> displayRecursively =
+                [&](const Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic>& matrix, int dimIndex) {
+                    if (dimIndex == numDims - 2) {
+                        std::cout << "    [";
+                        for (int i = 0; i < matrix.rows(); ++i) {
+                            std::cout << std::endl << "        [ ";
+                            for (int j = 0; j < matrix.cols(); ++j) {
+                                std::cout << matrix(i, j);
+                                if (j < matrix.cols() - 1) std::cout << ", ";
+                            }
+                            std::cout << " ]";
+                        }
+                        std::cout << std::endl << "    ]";
+                    } else {
+                        std::cout << "[" << std::endl;
+                        for (int i = 0; i < matrix.rows(); ++i) {
+                            std::cout << "    ";
+                            displayRecursively(matrix, dimIndex + 1);
+                            if (i < matrix.rows() - 1) std::cout << ",";
+                            std::cout << std::endl;
+                        }
+                        std::cout << "]";
+                    }
+                };
+
+            std::cout << "[" << std::endl;
+            displayRecursively(displayable, 0);
+            std::cout << std::endl << "]" << std::endl;
+        }
+    }
+
+    template <typename T>
+    void Tensor<T>::display() const {
+        this->displayInternal(values_);
+    }
+
+    template <typename T>
+    void Tensor<T>::displayGrad() const {
+        this->displayInternal(grads_);
     }
 
     template <typename T>
@@ -107,40 +180,55 @@ namespace nn::tensor
 
     template <typename T>
     void Tensor<T>::backward() {
-        if (backward_) {
+        if (stream_ptr) {
             int numChildren = children_.size();
             int numRows = values_.rows();
 
             // Matrix to store mapped columns
-            Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic> childrenValues(numRows, numChildren);
+            Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic> children_values(numRows, numChildren);
 
-            // Use Eigen::Map to reference each child's values without copying
+            // Use Eigen::Map to reference each child's values. No cpy
             for (int i = 0; i < numChildren; ++i) {
                 Eigen::Map<Eigen::Matrix<T, Eigen::Dynamic, 1>> childMap(children_[i]->values_.data(), numRows);
-                childrenValues.col(i) = childMap;
+                children_values.col(i) = childMap;
             }
 
             // compute the gradient
-            auto grads = backward_(childrenValues, values_, grads_);
+            auto grads = stream_ptr->backward(children_values, values_, grads_);
 
-            // Propagate the gradients to each child
+            // Propagate the gradients to all the children
             for (int i = 0; i < numChildren; ++i) {
                 children_[i]->grads_ += grads.col(i);
             }
 
-            // show grads for every childs
-            for (int i = 0; i < numChildren; ++i) {
-                std::cout << "Child n°" << i << std::endl;
-                for (int j = 0 ; j < children_[i]->size() ; ++j) {
-                    std::cout << children_[i]->grads_(j) << std::endl;
-                }
-            }
+            // // show grads for every chldren
+            // for (int i = 0; i < numChildren; ++i) {
+            //     std::cout << "Child n°" << i + 1 << std::endl;
+            //     for (int j = 0 ; j < children_[i]->size() ; ++j) {
+            //         std::cout << children_[i]->grads_(j) << std::endl;
+            //     }
+            // }
         }
     }
 
     template <typename T>
-    void Tensor<T>::setBackward(nn::Operation::BackwardFunc<T> func) {
-        backward_ = func;
+    void Tensor<T>::forward() {
+        if (stream_ptr) {
+            int numChildren = children_.size();
+            int numRows = values_.rows();
+
+            // Matrix to store mapped columns
+            Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic> children_values(numRows, numChildren);
+
+            // Use Eigen::Map to reference each child's values. No cpy
+            for (int i = 0; i < numChildren; ++i) {
+                Eigen::Map<Eigen::Matrix<T, Eigen::Dynamic, 1>> childMap(children_[i]->values_.data(), numRows);
+                children_values.col(i) = childMap;
+            }
+
+            // compute the next values_
+            values_ = stream_ptr->forward(children_values);
+        }
     }
 
     // explicit instanciation of the class
