@@ -3,7 +3,7 @@
 namespace nn::graph
 {
     template<typename T>
-    ComputeGraph<T>::ComputeGraph(std::shared_ptr<tensor::Tensor<T>> root) {
+    ComputationGraph<T>::ComputationGraph(std::shared_ptr<tensor::Tensor<T>> root) {
         std::vector<std::shared_ptr<tensor::Tensor<T>>> sorted;
         std::unordered_set<std::shared_ptr<tensor::Tensor<T>>> visited;
 
@@ -25,21 +25,21 @@ namespace nn::graph
     }
 
     template<typename T>
-    void ComputeGraph<T>::zeroGrad() {
+    void ComputationGraph<T>::zeroGrad() {
         for(auto& node : nodes_) { // iterate over all the nodes
             node->resetGrad();
         }
     }
 
     template<typename T>
-    void ComputeGraph<T>::forward() {
+    void ComputationGraph<T>::forward() {
         for(auto& node : nodes_) { // iterate over all the nodes
             node->forward();
         }
     }
 
     template<typename T>
-    void ComputeGraph<T>::backward() {
+    void ComputationGraph<T>::backward() {
         int last_node_index = nodes_.size() - 1;
         nodes_[last_node_index]->setOnesGrad();
         for(int i = last_node_index ; i >= 0 ; --i) { // iterate over all the nodes
@@ -49,14 +49,11 @@ namespace nn::graph
     }
 
     template<typename T>
-    const std::vector<std::shared_ptr<tensor::Tensor<T>>>& ComputeGraph<T>::getNodes() {
+    const std::vector<std::shared_ptr<tensor::Tensor<T>>>& ComputationGraph<T>::getNodes() {
         return nodes_;
     }
 
-    // template<typename T>
-    // ComputeGraph<T>
-
     // explicit instanciation of the class
-    template class ComputeGraph<float>;
-    template class ComputeGraph<double>;
+    template class ComputationGraph<float>;
+    template class ComputationGraph<double>;
 } // namespace nn::graph
