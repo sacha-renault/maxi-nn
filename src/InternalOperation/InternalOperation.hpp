@@ -5,6 +5,7 @@
 #include "ElementWiseOperation.hpp"
 #include "TensorwiseOperation.hpp"
 #include "DivOperation.hpp"
+#include "Broadcast.hpp"
 
 // namespace nn::Operation
 // {
