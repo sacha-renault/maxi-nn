@@ -3,6 +3,7 @@
 #include "MulOperation.hpp"
 #include "SubOperation.hpp"
 #include "ElementWiseOperation.hpp"
+#include "DivOperation.hpp"
 
 // namespace nn::Operation
 // {
