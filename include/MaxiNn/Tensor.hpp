@@ -29,17 +29,23 @@ namespace nn::tensor
         // private functions
         int computeIndex(const std::vector<int>& multi_dim_index) const;
         void displayInternal(const Eigen::Matrix<T, Eigen::Dynamic, 1>& displayable) const;
-    public:
+
+        // all constructor must be PRIVATE (we only want to use shared ptr)
         Tensor();
         Tensor(std::vector<int> dim, bool requires_grad = true);
         Tensor(std::vector<int> dim, Eigen::Matrix<T, Eigen::Dynamic, 1> values, bool requires_grad = true);
         Tensor(std::vector<int> dim, Eigen::Matrix<T, Eigen::Dynamic, 1> values, std::shared_ptr<nn::Operation::IOperation<T>> stream, bool requires_grad = true);
+    public:
+        static std::shared_ptr<Tensor<T>> create();
+        static std::shared_ptr<Tensor<T>> create(std::vector<int> dim, bool requires_grad = true);
+        static std::shared_ptr<Tensor<T>> create(std::vector<int> dim, Eigen::Matrix<T, Eigen::Dynamic, 1> values, bool requires_grad = true);
+        static std::shared_ptr<Tensor<T>> create(std::vector<int> dim, Eigen::Matrix<T, Eigen::Dynamic, 1> values, std::shared_ptr<nn::Operation::IOperation<T>> stream, bool requires_grad = true);
 
         // gradient
         void accumulateGrad(const Eigen::Matrix<T, Eigen::Dynamic, 1>& add_grad);
         void resetGrad();
         void setOnesGrad();
-        void addChild(const Tensor<T>& child);
+        void addChild(std::shared_ptr<Tensor<T>> child);
 
         // graph computations
         void backward();

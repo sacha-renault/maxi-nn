@@ -3,21 +3,27 @@
 #include <iostream>
 
 int main() {
-    nn::tensor::FTensor t1({2, 2}, true);
-    nn::tensor::FTensor t2({2, 2}, true);
-    nn::tensor::FTensor t3({2, 2}, true);
-    t1.fill(1);
-    t2.fill(2);
-    t3.fill(3);
-    t1[{0,0}] = 5;
+    auto t1 = nn::tensor::FTensor::create({2, 2}, true);
+    auto t2 = nn::tensor::FTensor::create({2, 2}, true);
+    auto t3 = nn::tensor::FTensor::create({2, 2}, true);
+    t1->fill(1);
+    t2->fill(2);
+    t3->fill(3);
+    (*t1)[{0,0}] = 5;
 
-    auto t4 = (t1 - t2);
-    auto t5 = t4 * t3;
+    auto t5 = t1 * t2 - t3;
 
-    t5.setOnesGrad();
-    t5.backward();
+    t5->setOnesGrad();
+    t5->backward();
+    t3->backward();
 
-    t5.display();
+    t5->display();
+    t1->display();
+
+    t5->displayGrad();
+    t3->displayGrad();
+    t2->displayGrad();
+    t1->displayGrad();
 
     return 0;
 }

@@ -40,6 +40,26 @@ namespace nn::tensor
     }
 
     template <typename T>
+    std::shared_ptr<Tensor<T>> Tensor<T>::create() {
+        return std::shared_ptr<Tensor<T>>(new Tensor<T>());
+    }
+
+    template <typename T>
+    std::shared_ptr<Tensor<T>> Tensor<T>::create(std::vector<int> dim, bool requires_grad) {
+        return std::shared_ptr<Tensor<T>>(new Tensor<T>(dim, requires_grad));
+    }
+
+    template <typename T>
+    std::shared_ptr<Tensor<T>> Tensor<T>::create(std::vector<int> dim, Eigen::Matrix<T, Eigen::Dynamic, 1> values, bool requires_grad) {
+        return std::shared_ptr<Tensor<T>>(new Tensor<T>(dim, values, requires_grad));
+    }
+
+    template <typename T>
+    std::shared_ptr<Tensor<T>> Tensor<T>::create(std::vector<int> dim, Eigen::Matrix<T, Eigen::Dynamic, 1> values, std::shared_ptr<nn::Operation::IOperation<T>> stream, bool requires_grad) {
+        return std::shared_ptr<Tensor<T>>(new Tensor<T>(dim, values, stream, requires_grad));
+    }
+
+    template <typename T>
     int Tensor<T>::computeIndex(const std::vector<int>& multi_dim_index) const {
         int index = 0;
         int multiplier = 1;
@@ -60,42 +80,48 @@ namespace nn::tensor
         if (numDims == 1) {
             std::cout << "[ ";
             for (int i = 0; i < displayable.rows(); ++i) {
-                std::cout << displayable(i, 0);
+                std::cout << displayable(i);
                 if (i < displayable.rows() - 1) std::cout << ", ";
             }
             std::cout << " ]" << std::endl;
         } else if (numDims == 2) {
             std::cout << "[" << std::endl;
-            for (int i = 0; i < displayable.rows(); ++i) {
+            int numRows = dimensions_[0];
+            int numCols = dimensions_[1];
+            for (int i = 0; i < numRows; ++i) {
                 std::cout << "    [ ";
-                for (int j = 0; j < displayable.cols(); ++j) {
-                    std::cout << displayable(i, j);
-                    if (j < displayable.cols() - 1) std::cout << ", ";
+                for (int j = 0; j < numCols; ++j) {
+                    std::cout << displayable(i * numCols + j);
+                    if (j < numCols - 1) std::cout << ", ";
                 }
-                std::cout << " ]" << std::endl;
+                std::cout << " ]";
+                if (i < numRows - 1) std::cout << std::endl;
             }
-            std::cout << "]" << std::endl;
+            std::cout << std::endl << "]" << std::endl;
         } else {
-            // For 3D or higher dimensions, we'll recursively print the slices.
-            std::function<void(const Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic>&, int)> displayRecursively =
-                [&](const Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic>& matrix, int dimIndex) {
+            // For 3D or higher dimensions, you need to calculate offsets correctly
+            std::function<void(int, int)> displayRecursively =
+                [&](int offset, int dimIndex) {
                     if (dimIndex == numDims - 2) {
                         std::cout << "    [";
-                        for (int i = 0; i < matrix.rows(); ++i) {
+                        int numRows = dimensions_[dimIndex];
+                        int numCols = dimensions_[dimIndex + 1];
+                        for (int i = 0; i < numRows; ++i) {
                             std::cout << std::endl << "        [ ";
-                            for (int j = 0; j < matrix.cols(); ++j) {
-                                std::cout << matrix(i, j);
-                                if (j < matrix.cols() - 1) std::cout << ", ";
+                            for (int j = 0; j < numCols; ++j) {
+                                std::cout << displayable(offset + i * numCols + j);
+                                if (j < numCols - 1) std::cout << ", ";
                             }
                             std::cout << " ]";
                         }
                         std::cout << std::endl << "    ]";
                     } else {
+                        int dimSize = dimensions_[dimIndex];
                         std::cout << "[" << std::endl;
-                        for (int i = 0; i < matrix.rows(); ++i) {
+                        for (int i = 0; i < dimSize; ++i) {
                             std::cout << "    ";
-                            displayRecursively(matrix, dimIndex + 1);
-                            if (i < matrix.rows() - 1) std::cout << ",";
+                            displayRecursively(offset + i * dimensions_[dimIndex + 1], dimIndex + 1);
+                            if (i < dimSize - 1) std::cout << ",";
                             std::cout << std::endl;
                         }
                         std::cout << "]";
@@ -103,7 +129,7 @@ namespace nn::tensor
                 };
 
             std::cout << "[" << std::endl;
-            displayRecursively(displayable, 0);
+            displayRecursively(0, 0);
             std::cout << std::endl << "]" << std::endl;
         }
     }
@@ -138,8 +164,8 @@ namespace nn::tensor
     }
 
     template <typename T>
-    void Tensor<T>::addChild(const Tensor<T>& child) {
-        children_.push_back(std::make_shared<Tensor>(child));
+    void Tensor<T>::addChild(std::shared_ptr<Tensor<T>> child) {
+        children_.push_back(child);
     }
 
     template <typename T>
@@ -233,4 +259,5 @@ namespace nn::tensor
 
     // explicit instanciation of the class
     template class Tensor<float>;
+    template class Tensor<double>;
 }
