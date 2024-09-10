@@ -240,16 +240,8 @@ namespace nn::tensor
 
             // Propagate the gradients to all the children
             for (int i = 0; i < numChildren; ++i) {
-                children_[i]->grads_ += grads.col(i);
+                children_[i]->accumulateGrad(grads.col(i));
             }
-
-            // // show grads for every chldren
-            // for (int i = 0; i < numChildren; ++i) {
-            //     std::cout << "Child n°" << i + 1 << std::endl;
-            //     for (int j = 0 ; j < children_[i]->size() ; ++j) {
-            //         std::cout << children_[i]->grads_(j) << std::endl;
-            //     }
-            // }
         }
     }
 
