@@ -210,6 +210,11 @@ namespace nn::tensor
     }
 
     template <typename T>
+    void Tensor<T>::fill(Eigen::Matrix<T, Eigen::Dynamic, 1> values) {
+        values_ = std::move(values);
+    }
+
+    template <typename T>
     void Tensor<T>::accumulateGrad(const Eigen::Matrix<T, Eigen::Dynamic, 1>& add_grad) {
         if (requires_grad_) {
             if (grads_.size() == add_grad.size()) {

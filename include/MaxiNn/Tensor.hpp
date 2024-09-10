@@ -57,6 +57,7 @@ namespace nn::tensor
         void setValues(Eigen::Matrix<T, Eigen::Dynamic, 1> new_values);
         const Eigen::Matrix<T, Eigen::Dynamic, 1>& getValues() const;
         void fill(T value);
+        void fill(Eigen::Matrix<T, Eigen::Dynamic, 1> values);
         T& operator[](const std::vector<int>& multi_dim_index);
         const Eigen::Matrix<T, Eigen::Dynamic, 1>& getValues();
 
