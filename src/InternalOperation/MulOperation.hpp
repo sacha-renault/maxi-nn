@@ -6,31 +6,35 @@ namespace nn::Operation
     template <typename T>
     class MulOperation : public IOperation<T> {
     public:
-        virtual Eigen::Matrix<T, Eigen::Dynamic, 1> forward(Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic> children_values) override {
-            // element wise sum
-            Eigen::Matrix<T, Eigen::Dynamic, 1> result = children_values.rowwise().prod();
-            return result;
+        // Forward pass: Element-wise multiplication
+        virtual xt::xarray<T> forward(xt::xarray<T>& children_values) override {
+            // Ensure there are exactly two child tensors
+            if (children_values.shape()[0] != 2) {
+                throw std::invalid_argument("MulOperation requires exactly two child tensors.");
+            }
+            // Perform element-wise multiplication
+            return xt::view(children_values, 0, xt::all()) * xt::view(children_values, 1, xt::all());
         }
 
-        virtual Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic> backward(
-            Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic>& children_values,
-            Eigen::Matrix<T, Eigen::Dynamic, 1>& parent_values,
-            Eigen::Matrix<T, Eigen::Dynamic, 1>& parent_grads
+        // Backward pass: Gradient of the multiplication
+        virtual xt::xarray<T> backward(
+            xt::xarray<T>& children_values,
+            xt::xarray<T>& parent_values,
+            xt::xarray<T>& parent_grads
         ) override {
-            // Check that there are exactly two columns (two children)
-            if (children_values.cols() != 2) {
-                throw std::invalid_argument("Mul operation requires exactly two children.");
+            // Ensure there are exactly two child tensors
+            if (children_values.shape()[0] != 2) {
+                throw std::invalid_argument("MulOperation requires exactly two child tensors.");
             }
 
-            // Create a matrix to store the gradients of the children
-            Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic> children_grads(children_values.rows(), 2);
+            // Create an array to store the gradients of the children
+            xt::xarray<T> children_grads = xt::zeros_like(children_values);
 
-            // Calculate the gradient for each child using the chain rule
             // Grad for child 1 is parent_grads * value of child 2
-            children_grads.col(0) = parent_grads.array() * children_values.col(1).array();
+            xt::view(children_grads, 0, xt::all()) = parent_grads * xt::view(children_values, 1, xt::all());
 
             // Grad for child 2 is parent_grads * value of child 1
-            children_grads.col(1) = parent_grads.array() * children_values.col(0).array();
+            xt::view(children_grads, 1, xt::all()) = parent_grads * xt::view(children_values, 0, xt::all());
 
             return children_grads;
         }

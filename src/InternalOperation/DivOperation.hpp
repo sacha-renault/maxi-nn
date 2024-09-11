@@ -7,33 +7,38 @@ namespace nn::Operation
     class DivOperation : public IOperation<T> {
     public:
         // Forward pass: Element-wise division
-        virtual Eigen::Matrix<T, Eigen::Dynamic, 1> forward(Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic> children_values) override {
-            if (children_values.cols() != 2) {
+        virtual xt::xarray<T> forward(xt::xarray<T>& children_values) override {
+            // Ensure there are exactly two child tensors
+            if (children_values.shape()[0] != 2) {
                 throw std::invalid_argument("DivOperation requires exactly two child tensors.");
             }
-            return (children_values.col(0).array() / children_values.col(1).array()).matrix();
+            // Perform element-wise division
+            return xt::view(children_values, 0, xt::all()) / xt::view(children_values, 1, xt::all());
         }
 
         // Backward pass: Gradient of the division
-        virtual Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic> backward(
-            Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic>& children_values,
-            Eigen::Matrix<T, Eigen::Dynamic, 1>& parent_values,
-            Eigen::Matrix<T, Eigen::Dynamic, 1>& parent_grads
+        virtual xt::xarray<T> backward(
+            xt::xarray<T>& children_values,
+            xt::xarray<T>& parent_values,
+            xt::xarray<T>& parent_grads
         ) override {
-            if (children_values.cols() != 2) {
+            // Ensure there are exactly two child tensors
+            if (children_values.shape()[0] != 2) {
                 throw std::invalid_argument("DivOperation requires exactly two child tensors.");
             }
 
-            Eigen::Matrix<T, Eigen::Dynamic, 1> numerator = children_values.col(0);
-            Eigen::Matrix<T, Eigen::Dynamic, 1> denominator = children_values.col(1);
+            // Extract numerator and denominator
+            xt::xarray<T> numerator = xt::view(children_values, 0, xt::all());
+            xt::xarray<T> denominator = xt::view(children_values, 1, xt::all());
 
-            Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic> grads(children_values.rows(), 2);
+            // Create a matrix to store the gradients of the two children
+            xt::xarray<T> grads = xt::zeros_like(children_values);
 
             // Gradient with respect to the numerator (child 0)
-            grads.col(0) = (parent_grads.array() / denominator.array()).matrix();
+            xt::view(grads, 0, xt::all()) = parent_grads / denominator;
 
             // Gradient with respect to the denominator (child 1)
-            grads.col(1) = (-parent_grads.array() * numerator.array() / denominator.array().square()).matrix();
+            xt::view(grads, 1, xt::all()) = -parent_grads * numerator / xt::square(denominator);
 
             return grads;
         }

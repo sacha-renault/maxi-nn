@@ -6,35 +6,36 @@ namespace nn::Operation
     template <typename T>
     class SubOperation : public IOperation<T> {
     public:
-        virtual Eigen::Matrix<T, Eigen::Dynamic, 1> forward(Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic> children_values) override {
+        // Forward pass: Element-wise subtraction
+        virtual xt::xarray<T> forward(xt::xarray<T>& children_values) override {
             // Ensure that there are exactly two columns (two children) for the subtraction
-            if (children_values.cols() != 2) {
-                throw std::invalid_argument("Sub operation requires exactly two children.");
+            if (children_values.shape()[0] != 2) {
+                throw std::invalid_argument("SubOperation requires exactly two child tensors.");
             }
 
             // Perform element-wise subtraction of the two columns
-            Eigen::Matrix<T, Eigen::Dynamic, 1> result = children_values.col(0) - children_values.col(1);
-            return result;
+            return xt::view(children_values, 0, xt::all()) - xt::view(children_values, 1, xt::all());
         }
 
-        virtual Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic> backward(
-            Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic>& children_values,
-            Eigen::Matrix<T, Eigen::Dynamic, 1>& parent_values,
-            Eigen::Matrix<T, Eigen::Dynamic, 1>& parent_grads
+        // Backward pass: Gradients of the subtraction
+        virtual xt::xarray<T> backward(
+            xt::xarray<T>& children_values,
+            xt::xarray<T>& parent_values,
+            xt::xarray<T>& parent_grads
         ) override {
             // Ensure that there are exactly two columns (two children) for the subtraction
-            if (children_values.cols() != 2) {
-                throw std::invalid_argument("Sub operation requires exactly two children.");
+            if (children_values.shape()[0] != 2) {
+                throw std::invalid_argument("SubOperation requires exactly two child tensors.");
             }
 
-            // Create a matrix to store the gradients of the children
-            Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic> children_grads(children_values.rows(), 2);
+            // Create an array to store the gradients of the children
+            xt::xarray<T> children_grads = xt::zeros_like(children_values);
 
             // Gradient for the first child is the same as the parent's gradient
-            children_grads.col(0) = parent_grads;
+            xt::view(children_grads, 0, xt::all()) = parent_grads;
 
             // Gradient for the second child is the negative of the parent's gradient
-            children_grads.col(1) = -parent_grads;
+            xt::view(children_grads, 1, xt::all()) = -parent_grads;
 
             return children_grads;
         }

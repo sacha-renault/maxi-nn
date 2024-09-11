@@ -6,12 +6,12 @@ namespace nn::math
 {
     template <typename T>
     std::shared_ptr<tensor::Tensor<T>> reLU(std::shared_ptr<tensor::Tensor<T>> input) {
-        auto relu_forward = [](const Eigen::Matrix<T, Eigen::Dynamic, 1>& input) -> Eigen::Matrix<T, Eigen::Dynamic, 1> {
-            return input.array().max(0);  // ReLU: max(0, x)
+        auto relu_forward = [](const xt::xarray<T>& input) -> xt::xarray<T> {
+            return xt::maximum(input, T(0));  // ReLU: max(0, x)
         };
 
-        auto relu_backward = [](const Eigen::Matrix<T, Eigen::Dynamic, 1>& input) -> Eigen::Matrix<T, Eigen::Dynamic, 1> {
-            return (input.array() > 0).template cast<T>();  // Derivative of ReLU
+        auto relu_backward = [](const xt::xarray<T>& input) -> xt::xarray<T> {
+            return xt::greater(input, T(0));  // Derivative of ReLU
         };
 
         auto output_val = relu_forward(input->getValues());
@@ -22,13 +22,13 @@ namespace nn::math
 
     template <typename T>
     std::shared_ptr<tensor::Tensor<T>> tanh(std::shared_ptr<tensor::Tensor<T>> input) {
-        auto tanh_forward = [](const Eigen::Matrix<T, Eigen::Dynamic, 1>& input) -> Eigen::Matrix<T, Eigen::Dynamic, 1> {
-            return input.array().tanh();
+        auto tanh_forward = [](const xt::xarray<T>& input) -> xt::xarray<T> {
+            return xt::tanh(input);
         };
 
-        auto tanh_backward = [](const Eigen::Matrix<T, Eigen::Dynamic, 1>& input) -> Eigen::Matrix<T, Eigen::Dynamic, 1> {
-            Eigen::Matrix<T, Eigen::Dynamic, 1> tanh_val = input.array().tanh();
-            return 1.0 - tanh_val.array().square();
+        auto tanh_backward = [](const xt::xarray<T>& input) -> xt::xarray<T> {
+            xt::xarray<T> tanh_val = xt::tanh(input);
+            return T(1.0) - xt::square(tanh_val);
         };
 
         auto output_val = tanh_forward(input->getValues());
@@ -39,12 +39,12 @@ namespace nn::math
 
     template <typename T>
     std::shared_ptr<tensor::Tensor<T>> pow(std::shared_ptr<tensor::Tensor<T>> input, T exponent) {
-        auto pow_forward = [exponent](const Eigen::Matrix<T, Eigen::Dynamic, 1>& input) -> Eigen::Matrix<T, Eigen::Dynamic, 1> {
-            return input.array().pow(exponent);
+        auto pow_forward = [exponent](const xt::xarray<T>& input) -> xt::xarray<T> {
+            return xt::pow(input, exponent);
         };
 
-        auto pow_backward = [exponent](const Eigen::Matrix<T, Eigen::Dynamic, 1>& input) -> Eigen::Matrix<T, Eigen::Dynamic, 1> {
-            return exponent * input.array().pow(exponent - 1);
+        auto pow_backward = [exponent](const xt::xarray<T>& input) -> xt::xarray<T> {
+            return exponent * xt::pow(input, exponent - T(1));
         };
 
         auto output_val = pow_forward(input->getValues());
@@ -55,12 +55,12 @@ namespace nn::math
 
     template <typename T>
     std::shared_ptr<tensor::Tensor<T>> abs(std::shared_ptr<tensor::Tensor<T>> input) {
-        auto abs_forward = [](const Eigen::Matrix<T, Eigen::Dynamic, 1>& input) -> Eigen::Matrix<T, Eigen::Dynamic, 1> {
-            return input.array().abs();
+        auto abs_forward = [](const xt::xarray<T>& input) -> xt::xarray<T> {
+            return xt::abs(input);
         };
 
-        auto abs_backward = [](const Eigen::Matrix<T, Eigen::Dynamic, 1>& input) -> Eigen::Matrix<T, Eigen::Dynamic, 1> {
-            return input.array().sign();
+        auto abs_backward = [](const xt::xarray<T>& input) -> xt::xarray<T> {
+            return xt::sign(input);
         };
 
         auto output_val = abs_forward(input->getValues());
@@ -71,12 +71,12 @@ namespace nn::math
 
     template <typename T>
     std::shared_ptr<tensor::Tensor<T>> exp(std::shared_ptr<tensor::Tensor<T>> input) {
-        auto exp_forward = [](const Eigen::Matrix<T, Eigen::Dynamic, 1>& input) -> Eigen::Matrix<T, Eigen::Dynamic, 1> {
-            return input.array().exp();
+        auto exp_forward = [](const xt::xarray<T>& input) -> xt::xarray<T> {
+            return xt::exp(input);
         };
 
-        auto exp_backward = [](const Eigen::Matrix<T, Eigen::Dynamic, 1>& input) -> Eigen::Matrix<T, Eigen::Dynamic, 1> {
-            return input.array().exp();  // Same as forward for exp
+        auto exp_backward = [](const xt::xarray<T>& input) -> xt::xarray<T> {
+            return xt::exp(input);  // Same as forward for exp
         };
 
         auto output_val = exp_forward(input->getValues());
@@ -87,12 +87,12 @@ namespace nn::math
 
     template <typename T>
     std::shared_ptr<tensor::Tensor<T>> log(std::shared_ptr<tensor::Tensor<T>> input) {
-        auto log_forward = [](const Eigen::Matrix<T, Eigen::Dynamic, 1>& input) -> Eigen::Matrix<T, Eigen::Dynamic, 1> {
-            return input.array().log();
+        auto log_forward = [](const xt::xarray<T>& input) -> xt::xarray<T> {
+            return xt::log(input);
         };
 
-        auto log_backward = [](const Eigen::Matrix<T, Eigen::Dynamic, 1>& input) -> Eigen::Matrix<T, Eigen::Dynamic, 1> {
-            return input.array().inverse();  // 1 / x
+        auto log_backward = [](const xt::xarray<T>& input) -> xt::xarray<T> {
+            return T(1) / input;  // 1 / x
         };
 
         auto output_val = log_forward(input->getValues());
@@ -103,12 +103,12 @@ namespace nn::math
 
     template <typename T>
     std::shared_ptr<tensor::Tensor<T>> sqrt(std::shared_ptr<tensor::Tensor<T>> input) {
-        auto sqrt_forward = [](const Eigen::Matrix<T, Eigen::Dynamic, 1>& input) -> Eigen::Matrix<T, Eigen::Dynamic, 1> {
-            return input.array().sqrt();
+        auto sqrt_forward = [](const xt::xarray<T>& input) -> xt::xarray<T> {
+            return xt::sqrt(input);
         };
 
-        auto sqrt_backward = [](const Eigen::Matrix<T, Eigen::Dynamic, 1>& input) -> Eigen::Matrix<T, Eigen::Dynamic, 1> {
-            return 0.5 * input.array().inverse().sqrt();  // 1 / (2 * sqrt(x))
+        auto sqrt_backward = [](const xt::xarray<T>& input) -> xt::xarray<T> {
+            return T(0.5) * xt::pow(input, T(-0.5));  // 1 / (2 * sqrt(x))
         };
 
         auto output_val = sqrt_forward(input->getValues());
@@ -119,12 +119,12 @@ namespace nn::math
 
     template <typename T>
     std::shared_ptr<tensor::Tensor<T>> inverse(std::shared_ptr<tensor::Tensor<T>> input) {
-        auto inverse_forward = [](const Eigen::Matrix<T, Eigen::Dynamic, 1>& input) -> Eigen::Matrix<T, Eigen::Dynamic, 1> {
-            return input.array().inverse();
+        auto inverse_forward = [](const xt::xarray<T>& input) -> xt::xarray<T> {
+            return T(1) / input;
         };
 
-        auto inverse_backward = [](const Eigen::Matrix<T, Eigen::Dynamic, 1>& input) -> Eigen::Matrix<T, Eigen::Dynamic, 1> {
-            return -input.array().inverse().square();  // -1 / x^2
+        auto inverse_backward = [](const xt::xarray<T>& input) -> xt::xarray<T> {
+            return -T(1) / xt::square(input);  // -1 / x^2
         };
 
         auto output_val = inverse_forward(input->getValues());
@@ -135,12 +135,12 @@ namespace nn::math
 
     template <typename T>
     std::shared_ptr<tensor::Tensor<T>> clip(std::shared_ptr<tensor::Tensor<T>> input, T min_val, T max_val) {
-        auto clip_forward = [min_val, max_val](const Eigen::Matrix<T, Eigen::Dynamic, 1>& input) -> Eigen::Matrix<T, Eigen::Dynamic, 1> {
-            return input.array().min(max_val).max(min_val);
+        auto clip_forward = [min_val, max_val](const xt::xarray<T>& input) -> xt::xarray<T> {
+            return xt::clip(input, min_val, max_val);
         };
 
-        auto clip_backward = [min_val, max_val](const Eigen::Matrix<T, Eigen::Dynamic, 1>& input) -> Eigen::Matrix<T, Eigen::Dynamic, 1> {
-            return ((input.array() > min_val) && (input.array() < max_val)).template cast<T>();
+        auto clip_backward = [min_val, max_val](const xt::xarray<T>& input) -> xt::xarray<T> {
+            return xt::cast<T>(input > min_val & input < max_val);
         };
 
         auto output_val = clip_forward(input->getValues());

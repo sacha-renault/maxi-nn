@@ -6,23 +6,23 @@ namespace nn::Operation
     template <typename T>
     class AddOperation : public IOperation<T> {
     public:
-        virtual Eigen::Matrix<T, Eigen::Dynamic, 1> forward(Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic> children_values) override {
+        virtual xt::xarray<T> forward(xt::xarray<T>& children_values) override {
             // element wise sum
-            Eigen::Matrix<T, Eigen::Dynamic, 1> result = children_values.rowwise().sum();
+            xt::xarray<T> result = xt::sum(children_values);
             return result;
         }
 
-        virtual Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic> backward(
-            Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic>& children_values,
-            Eigen::Matrix<T, Eigen::Dynamic, 1>& parent_values,
-            Eigen::Matrix<T, Eigen::Dynamic, 1>& parent_grads
+        virtual xt::xarray<T> backward(
+            xt::xarray<T>& children_values,
+            xt::xarray<T>& parent_values,
+            xt::xarray<T>& parent_grads
         ) override {
             // Create a matrix to store the gradients of the children
-            Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic> children_grads(children_values.rows(), children_values.cols());
-
+            xt::xarray<T> children_grads = xt::zeros_like(children_values);
+            
             // Propagate the parent's gradient to each child
-            for (int i = 0; i < children_values.cols(); ++i) {
-                children_grads.col(i) = parent_grads;  // For add, the gradient is simply passed through
+            for (int i = 0; i < children_values.shape(0); ++i) {
+                xt::view(children_grads, i, xt::all()) = parent_grads;  // For add, the gradient is simply passed through
             }
 
             return children_grads;
