@@ -187,4 +187,43 @@ namespace nn::Operation
             }
         );
     }
+
+    template <typename T>
+    std::shared_ptr<IOperation<T>> reduceMean(xt::dynamic_shape<size_t> axis = xt::dynamic_shape<size_t>()) {
+        return std::make_shared<IOperation<T>>(
+            [axis](const std::vector<std::reference_wrapper<const xt::xarray<T>>>& children_values) -> xt::xarray<T> {
+                if (children_values.size() != 1) {
+                    throw std::runtime_error("ReduceMean must have exactly one child");
+                }
+                const auto& child = children_values[0].get();
+                
+                if (axis.empty()) {
+                    // If no axis is provided, reduce over all dimensions
+                    return xt::mean(child);
+                } else {
+                    // Reduce along specified axis
+                    return xt::mean(child, axis);
+                }
+            },
+            [axis](const std::vector<std::reference_wrapper<const xt::xarray<T>>>& children_values,
+                       const xt::xarray<T>& output_vals,
+                       const xt::xarray<T>& output_grads) -> std::vector<xt::xarray<T>> {
+                if (children_values.size() != 1) {
+                    throw std::runtime_error("ReduceMean must have exactly one child");
+                }
+                const auto& child = children_values[0].get();
+
+                // Calculate the gradient with respect to the input tensor
+                std::vector<xt::xarray<T>> grad_wrt_input(1);
+                if (axis.empty()) {
+                    // If no axis is provided, replicate the gradient to match the input shape
+                    grad_wrt_input[0] = xt::broadcast(output_grads, child.shape()) / child.size();
+                } else {
+                    // Expand gradients to the shape of the original input
+                    grad_wrt_input[0] = xt::broadcast(output_grads, child.shape()) / xt::prod(child.shape(axis));
+                }
+                return grad_wrt_input;
+            }
+        );
+    }
 } // namespace nn::Operation

@@ -34,24 +34,34 @@ using namespace nn;
 // }
 
 int main() {
-    auto t1 = tensor::FTensor::random({3, 5});
-    auto t2 = tensor::FTensor::random({5, 2});
-    auto t3 = nn::math::dot(t1, t2);
+    auto input = tensor::FTensor::normal({128, 784});
+    auto t2 = tensor::FTensor::normal({784, 256});
+    auto t3 = tensor::FTensor::normal({256, 128});
+    auto t4 = tensor::FTensor::normal({128, 32});
+    auto t5 = tensor::FTensor::normal({32, 10});
+
+    auto x = nn::math::dot(input, t2);
+    x = nn::math::tanh(x);
+    x = nn::math::dot(x, t3);
+    x = nn::math::tanh(x);
+    x = nn::math::dot(x, t4);
+    x = nn::math::tanh(x);
+    x = nn::math::dot(x, t5);
+    x = nn::math::tanh(x);
     // auto n = neuron::Neuron<float>(3);
     // auto output = n.forward(input);
 
-    auto graph = graph::FComputeGraph(t3);
+    auto graph = graph::FComputeGraph(x);
     graph.backward();
 
-    std::cout << " T3 : " << std::endl;
-    t3->display();
-    t3->displayGrad();
-    std::cout << " T2 : " << std::endl;
-    t2->display();
-    t2->displayGrad();
-    std::cout << " T1 : " << std::endl;
-    t1->display();
-    t1->displayGrad();
+    for (int i = 0 ; i < 100 ; ++i) {
+        auto rnd = tensor::FTensor::normal(input->shape());
+        input->fill(rnd->getValues());
+        graph.forward();
+        std::cout << " iteration : " << i << std::endl;
+    }
+    
+    // x->displayGrad();
 
     // auto t1 = tensor::FTensor::random({5, 3});
     // auto t2 = tensor::FTensor::random({1, 3});
