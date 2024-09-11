@@ -34,9 +34,9 @@ using namespace nn;
 // }
 
 int main() {
-    auto t1 = tensor::FTensor::random({2, 2});
-    auto t2 = tensor::FTensor::random({1, 2});
-    auto t3 = nn::math::clip(t1 - t2, 0.25f, 1.0f);
+    auto t1 = tensor::FTensor::random({3, 5});
+    auto t2 = tensor::FTensor::random({5, 2});
+    auto t3 = nn::math::dot(t1, t2);
     // auto n = neuron::Neuron<float>(3);
     // auto output = n.forward(input);
 

@@ -1,9 +1,21 @@
-// #pragma once
-// #include <memory>
-// #include "../MaxiNn.hpp"
+#pragma once
+#include <memory>
+#include "../MaxiNn.hpp"
 
-// namespace nn::math
-// {
+namespace nn::math
+{
+    template <typename T>
+    std::shared_ptr<tensor::Tensor<T>> dot(std::shared_ptr<tensor::Tensor<T>> lt, std::shared_ptr<tensor::Tensor<T>> rt) {
+        // First make a forward pass with the operation
+        xt::xarray<T> valResult = nn::Operation::Dot<T>->forward({lt->getValues(), rt->getValues()});
+
+        // get the result and create a tensor with same shape -> set the result data inside 
+        auto result = tensor::Tensor<T>::create(valResult.shape(), valResult, nn::Operation::Dot<T>);
+
+        result->addChild(lt);
+        result->addChild(rt);
+        return result;
+    }
 //     template <typename T>
 //     std::shared_ptr<tensor::Tensor<T>> reduceMean(std::shared_ptr<tensor::Tensor<T>> input) {
 //         auto mean_forward = [](const xt::xarray<T>& input) -> xt::xarray<T> {
@@ -91,4 +103,4 @@
 //         output->addChild(b);
 //         return output;
 //     }
-// } // namespace nn::math
+} // namespace nn::math

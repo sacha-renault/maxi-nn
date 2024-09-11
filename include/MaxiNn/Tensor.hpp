@@ -8,6 +8,9 @@
 #include <xtensor/xadapt.hpp>
 #include <xtensor/xview.hpp>
 #include <xtensor/xrandom.hpp>
+#include <xtensor/xoperation.hpp>
+#include <xtensor/xmath.hpp>
+#include <xtensor-blas/xlinalg.hpp>
 #include <xtensor/xio.hpp>
 #include "../../src/InternalOperation/InternalOperation.hpp"
 

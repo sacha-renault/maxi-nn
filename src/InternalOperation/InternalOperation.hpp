@@ -1,7 +1,7 @@
 #include "IOperation.hpp"
 #include "ArithmeticOperation.hpp"
 #include "ElementwiseOperation.hpp"
-#include "MulOperation.hpp"
+#include "MatOperation.hpp"
 #include "SubOperation.hpp"
 
 // namespace nn::Operation
