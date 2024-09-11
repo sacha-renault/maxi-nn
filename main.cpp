@@ -34,13 +34,33 @@ using namespace nn;
 // }
 
 int main() {
-    auto input = tensor::FTensor::random({5, 3});
-    auto n = neuron::Neuron<float>(3);
-    auto output = n.forward(input);
+    auto t1 = tensor::FTensor::random({2, 2});
+    auto t2 = tensor::FTensor::random({1, 2});
+    auto t3 = nn::math::clip(t1 - t2, 0.25f, 1.0f);
+    // auto n = neuron::Neuron<float>(3);
+    // auto output = n.forward(input);
 
-    auto graph = graph::FComputeGraph(output);
+    auto graph = graph::FComputeGraph(t3);
     graph.backward();
 
-    output->display();
+    std::cout << " T3 : " << std::endl;
+    t3->display();
+    t3->displayGrad();
+    std::cout << " T2 : " << std::endl;
+    t2->display();
+    t2->displayGrad();
+    std::cout << " T1 : " << std::endl;
+    t1->display();
+    t1->displayGrad();
+
+    // auto t1 = tensor::FTensor::random({5, 3});
+    // auto t2 = tensor::FTensor::random({1, 3});
+    // auto t3 = tensor::FTensor::random({ 1 });
+    // auto output = nn::math::reduceSum(t1 * t2, {1}) + t3;
+
+    // auto graph = graph::FComputeGraph(output);
+    // graph.backward();
+
+    // output->display();
     return 0;
 }

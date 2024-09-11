@@ -1,88 +1,64 @@
-#pragma once
-#include "../../include/MaxiNn.hpp"
-#include <memory>
+// #pragma once
+// #include "../../include/MaxiNn.hpp"
+// #include <memory>
 
-namespace nn::neuron
-{
+// namespace nn::neuron
+// {
+//     template <typename T>
+//     class Neuron {
+//     public:
+//         Neuron(size_t num_inputs);
 
-    template <typename T>
-    class Neuron {
-    public:
-        Neuron(int num_inputs);
+//         // Forward pass: Calculate the output of the neuron
+//         std::shared_ptr<tensor::Tensor<T>> forward(std::shared_ptr<tensor::Tensor<T>> inputs);
 
-        // Forward pass: Calculate the output of the neuron
-        std::shared_ptr<Tensor<T>> forward(std::shared_ptr<Tensor<T>> inputs);
+//         // Setters and Getters for weights and bias
+//         void setWeights(std::shared_ptr<tensor::Tensor<T>> new_weights);
+//         std::shared_ptr<tensor::Tensor<T>> getWeights() const;
 
-        // Setters and Getters for weights and bias
-        void setWeights(std::shared_ptr<Tensor<T>> new_weights);
-        std::shared_ptr<Tensor<T>> getWeights() const;
+//         void setBias(std::shared_ptr<tensor::Tensor<T>> new_bias);
+//         std::shared_ptr<tensor::Tensor<T>> getBias() const;
 
-        void setBias(std::shared_ptr<Tensor<T>> new_bias);
-        std::shared_ptr<Tensor<T>> getBias() const;
+//     private:
+//         std::shared_ptr<tensor::Tensor<T>> weights_;
+//         std::shared_ptr<tensor::Tensor<T>> bias_;
+//     };
 
-    private:
-        std::shared_ptr<Tensor<T>> weights_;
-        std::shared_ptr<Tensor<T>> bias_;
+//     // Constructor
+//     template <typename T>
+//     Neuron<T>::Neuron(size_t num_inputs) {
+//         weights_ = tensor::Tensor<T>::random({1, num_inputs});
+//         bias_ = tensor::Tensor<T>::random({1});  // Initialize bias as a tensor::Tensor with shape (1, 1)
+//     }
 
-        // Activation function (e.g., sigmoid)
-        std::shared_ptr<Tensor<T>> sigmoid(std::shared_ptr<Tensor<T>> x) const;
+//     // Forward pass
+//     template <typename T>
+//     std::shared_ptr<tensor::Tensor<T>> Neuron<T>::forward(std::shared_ptr<tensor::Tensor<T>> inputs) {
+//         return nn::math::reduceSum(inputs * weights_ , { 1 }) + bias_;
+//     }
 
-        // Utility function to initialize weights
-        void initializeWeights(int num_inputs);
-    };
+//     // Set weights
+//     template <typename T>
+//     void Neuron<T>::setWeights(std::shared_ptr<tensor::Tensor<T>> new_weights) {
+//         weights_ = new_weights;
+//     }
 
-    // Constructor
-    template <typename T>
-    Neuron<T>::Neuron(int num_inputs) {
-        initializeWeights(num_inputs);
-        bias_ = Tensor<T>::zeros({1, 1});  // Initialize bias as a Tensor with shape (1, 1)
-    }
+//     // Get weights
+//     template <typename T>
+//     std::shared_ptr<tensor::Tensor<T>> Neuron<T>::getWeights() const {
+//         return weights_;
+//     }
 
-    // Forward pass
-    template <typename T>
-    std::shared_ptr<Tensor<T>> Neuron<T>::forward(std::shared_ptr<Tensor<T>> inputs) {
-        // Weighted sum: input * weights + bias
-        auto weighted_sum = inputs->matmul(weights_)->add(bias_);
+//     // Set bias
+//     template <typename T>
+//     void Neuron<T>::setBias(std::shared_ptr<tensor::Tensor<T>> new_bias) {
+//         bias_ = new_bias;
+//     }
 
-        // Apply activation function (e.g., sigmoid)
-        return sigmoid(weighted_sum);
-    }
+//     // Get bias
+//     template <typename T>
+//     std::shared_ptr<tensor::Tensor<T>> Neuron<T>::getBias() const {
+//         return bias_;
+//     }
 
-    // Sigmoid activation function
-    template <typename T>
-    std::shared_ptr<Tensor<T>> Neuron<T>::sigmoid(std::shared_ptr<Tensor<T>> x) const {
-        // Assuming the Tensor class has an element-wise operation method
-        return x->apply([](T val) { return 1.0 / (1.0 + std::exp(-val)); });
-    }
-
-    // Initialize weights randomly
-    template <typename T>
-    void Neuron<T>::initializeWeights(int num_inputs) {
-        weights_ = Tensor<T>::random({num_inputs, 1}, -1.0, 1.0);  // Random initialization in range [-1, 1]
-    }
-
-    // Set weights
-    template <typename T>
-    void Neuron<T>::setWeights(std::shared_ptr<Tensor<T>> new_weights) {
-        weights_ = new_weights;
-    }
-
-    // Get weights
-    template <typename T>
-    std::shared_ptr<Tensor<T>> Neuron<T>::getWeights() const {
-        return weights_;
-    }
-
-    // Set bias
-    template <typename T>
-    void Neuron<T>::setBias(std::shared_ptr<Tensor<T>> new_bias) {
-        bias_ = new_bias;
-    }
-
-    // Get bias
-    template <typename T>
-    std::shared_ptr<Tensor<T>> Neuron<T>::getBias() const {
-        return bias_;
-    }
-
-} // namespace nn::neuron
+// } // namespace nn::neuron

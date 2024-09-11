@@ -8,7 +8,7 @@ namespace nn::tensor
     Tensor<T>::Tensor() : total_size_(1), values_(0){}
 
     template <typename T>
-    Tensor<T>::Tensor(std::vector<std::size_t> dims, bool requires_grad) 
+    Tensor<T>::Tensor(xt::dynamic_shape<size_t> dims, bool requires_grad) 
         : dimensions_(dims), requires_grad_(requires_grad), stream_ptr(nullptr)
     {
         // Calculate total size
@@ -24,7 +24,7 @@ namespace nn::tensor
     }
 
     template <typename T>
-    Tensor<T>::Tensor(std::vector<std::size_t> dims, xt::xarray<T> values, bool requires_grad)
+    Tensor<T>::Tensor(xt::dynamic_shape<size_t> dims, xt::xarray<T> values, bool requires_grad)
         : Tensor<T>(dims, requires_grad)
     {
         values_ = values;  // Copy provided values
@@ -32,7 +32,7 @@ namespace nn::tensor
     }
 
     template <typename T>
-    Tensor<T>::Tensor(std::vector<std::size_t> dims, xt::xarray<T> values, std::shared_ptr<nn::Operation::IOperation<T>> stream, bool requires_grad)
+    Tensor<T>::Tensor(xt::dynamic_shape<size_t> dims, xt::xarray<T> values, std::shared_ptr<nn::Operation::IOperation<T>> stream, bool requires_grad)
         : Tensor<T>(dims, requires_grad)
     {
         values_ = values;  // Copy provided values
@@ -45,36 +45,36 @@ namespace nn::tensor
     }
 
     template <typename T>
-    std::shared_ptr<Tensor<T>> Tensor<T>::create(std::vector<std::size_t> dim, bool requires_grad) {
+    std::shared_ptr<Tensor<T>> Tensor<T>::create(xt::dynamic_shape<size_t> dim, bool requires_grad) {
         return std::shared_ptr<Tensor<T>>(new Tensor<T>(dim, requires_grad));
     }
 
     template <typename T>
-    std::shared_ptr<Tensor<T>> Tensor<T>::create(std::vector<std::size_t> dim, xt::xarray<T> values, bool requires_grad) {
+    std::shared_ptr<Tensor<T>> Tensor<T>::create(xt::dynamic_shape<size_t> dim, xt::xarray<T> values, bool requires_grad) {
         return std::shared_ptr<Tensor<T>>(new Tensor<T>(dim, values, requires_grad));
     }
 
     template <typename T>
-    std::shared_ptr<Tensor<T>> Tensor<T>::create(std::vector<std::size_t> dim, xt::xarray<T> values, std::shared_ptr<nn::Operation::IOperation<T>> stream, bool requires_grad) {
+    std::shared_ptr<Tensor<T>> Tensor<T>::create(xt::dynamic_shape<size_t> dim, xt::xarray<T> values, std::shared_ptr<nn::Operation::IOperation<T>> stream, bool requires_grad) {
         return std::shared_ptr<Tensor<T>>(new Tensor<T>(dim, values, stream, requires_grad));
     }
 
     template <typename T>
-    std::shared_ptr<Tensor<T>> Tensor<T>::zeros(std::vector<std::size_t> dims, bool requires_grad) {
+    std::shared_ptr<Tensor<T>> Tensor<T>::zeros(xt::dynamic_shape<size_t> dims, bool requires_grad) {
         auto values = xt::zeros<T>(dims);
         auto new_tensor = Tensor::create(dims, values, requires_grad);
         return new_tensor;
     }
 
     template <typename T>
-    std::shared_ptr<Tensor<T>> Tensor<T>::ones(std::vector<std::size_t> dims, bool requires_grad) {
+    std::shared_ptr<Tensor<T>> Tensor<T>::ones(xt::dynamic_shape<size_t> dims, bool requires_grad) {
         auto values = xt::ones<T>(dims);
         auto new_tensor = Tensor::create(dims, values, requires_grad);
         return new_tensor;
     }
 
     template <typename T>
-    std::shared_ptr<Tensor<T>> Tensor<T>::random(std::vector<std::size_t> dims, T min, T max, bool requires_grad) {
+    std::shared_ptr<Tensor<T>> Tensor<T>::random(xt::dynamic_shape<size_t> dims, T min, T max, bool requires_grad) {
         std::random_device rd;  // Obtain a random number from hardware
         std::mt19937 gen(rd()); // Seed the generator
         std::uniform_real_distribution<> dis(min, max); // Define the range
@@ -89,7 +89,7 @@ namespace nn::tensor
     }
 
     template <typename T>
-    std::shared_ptr<Tensor<T>> Tensor<T>::normal(std::vector<std::size_t> dims, T mean, T stddev, bool requires_grad) {
+    std::shared_ptr<Tensor<T>> Tensor<T>::normal(xt::dynamic_shape<size_t> dims, T mean, T stddev, bool requires_grad) {
         std::random_device rd;  // Obtain a random number from hardware
         std::mt19937 gen(rd()); // Seed the generator
         std::normal_distribution<> dis(mean, stddev); // Define the distribution
@@ -174,8 +174,8 @@ namespace nn::tensor
     }
 
     template <typename T>
-    std::vector<std::size_t> Tensor<T>::shape() const {
-        return dimensions_;
+    xt::dynamic_shape<size_t> Tensor<T>::shape() const {
+        return values_.shape();
     }
 
     template <typename T>
@@ -194,7 +194,7 @@ namespace nn::tensor
             grads_ += add_grad;
         } else {
             // Calculate the sum axes needed to accumulate add_grad
-            std::vector<std::size_t> sum_axes;
+            xt::dynamic_shape<size_t> sum_axes;
             std::size_t dims = add_grad.shape().size();
             for (std::size_t i = 0; i < dims; ++i) {
                 if (grads_.shape()[i] != add_grad.shape()[i]) {
@@ -214,27 +214,20 @@ namespace nn::tensor
     template <typename T>
     void Tensor<T>::backward() {
         if (stream_ptr) {
-            int numChildren = children_.size();
-            auto children_shape = children_[0]->shape();
-            
-            // Create the full shape for children_values
-            std::vector<std::size_t> full_shape = {static_cast<std::size_t>(numChildren)};
-            full_shape.insert(full_shape.end(), children_shape.begin(), children_shape.end());
-            
             // Create an array to hold all children's values
-            xt::xarray<T> children_values = xt::zeros<T>(full_shape);
+            std::vector<std::reference_wrapper<const xt::xarray<T>>> children_values;
 
-            // Fill the children_values array with each child's data
-            for (int i = 0; i < numChildren; ++i) {
-                xt::view(children_values, i, xt::all()) = children_[i]->values_;
+            // Point to actual children values
+            for (const auto& child : children_) {
+                children_values.emplace_back(child->values_);
             }
 
             // Compute the gradient
-            xt::xarray<T> grads = stream_ptr->backward(children_values, values_, grads_);
+            std::vector<xt::xarray<T>> grads = stream_ptr->backward(children_values, values_, grads_);
 
             // Propagate the gradients to all the children
-            for (int i = 0; i < numChildren; ++i) {
-                children_[i]->accumulateGrad(xt::view(grads, i, xt::all()));
+            for (int i = 0; i < children_.size(); ++i) {
+                children_[i]->accumulateGrad(grads[i]);
             }
         }
     }
@@ -243,20 +236,13 @@ namespace nn::tensor
 
     template <typename T>
     void Tensor<T>::forward() {
-        if (stream_ptr) {
-            int numChildren = children_.size();
-            auto children_shape = children_[0]->shape();
-            
-            // Create the full shape for children_values
-            std::vector<std::size_t> full_shape = {static_cast<std::size_t>(numChildren)};
-            full_shape.insert(full_shape.end(), children_shape.begin(), children_shape.end());
-            
+        if (stream_ptr) {          
             // Create an array to hold all children's values
-            xt::xarray<T> children_values = xt::zeros<T>(full_shape);
+            std::vector<std::reference_wrapper<const xt::xarray<T>>> children_values;
 
-            // Fill the children_values array with each child's data
-            for (int i = 0; i < numChildren; ++i) {
-                xt::view(children_values, i, xt::all()) = children_[i]->values_;
+            // Point to actual children values
+            for (const auto& child : children_) {
+                children_values.emplace_back(child->values_);
             }
 
             // Compute the next values_

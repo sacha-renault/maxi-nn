@@ -24,7 +24,7 @@ namespace nn::tensor
         bool requires_grad_;
 
         // dimensions
-        std::vector<std::size_t> dimensions_;
+        xt::dynamic_shape<size_t> dimensions_;
         int total_size_;
 
         // children
@@ -35,19 +35,19 @@ namespace nn::tensor
 
         // all constructor must be PRIVATE (we only want to use shared ptr)
         Tensor();
-        Tensor(std::vector<std::size_t> dim, bool requires_grad = true);
-        Tensor(std::vector<std::size_t> dim, xt::xarray<T> values, bool requires_grad = true);
-        Tensor(std::vector<std::size_t> dim, xt::xarray<T> values, std::shared_ptr<nn::Operation::IOperation<T>> stream, bool requires_grad = true);
+        Tensor(xt::dynamic_shape<size_t> dim, bool requires_grad = true);
+        Tensor(xt::dynamic_shape<size_t> dim, xt::xarray<T> values, bool requires_grad = true);
+        Tensor(xt::dynamic_shape<size_t> dim, xt::xarray<T> values, std::shared_ptr<nn::Operation::IOperation<T>> stream, bool requires_grad = true);
     public:
         // static factory method
         static std::shared_ptr<Tensor<T>> create();
-        static std::shared_ptr<Tensor<T>> create(std::vector<std::size_t> dim, bool requires_grad = true);
-        static std::shared_ptr<Tensor<T>> create(std::vector<std::size_t> dim, xt::xarray<T> values, bool requires_grad = true);
-        static std::shared_ptr<Tensor<T>> create(std::vector<std::size_t> dim, xt::xarray<T> values, std::shared_ptr<nn::Operation::IOperation<T>> stream, bool requires_grad = true);
-        static std::shared_ptr<Tensor<T>> zeros(std::vector<std::size_t> dim, bool requires_grad = true);
-        static std::shared_ptr<Tensor<T>> ones(std::vector<std::size_t> dim, bool requires_grad = true);
-        static std::shared_ptr<Tensor<T>> random(std::vector<std::size_t> dim, T min = 0, T max = 1, bool requires_grad = true);
-        static std::shared_ptr<Tensor<T>> normal(std::vector<std::size_t> dim, T mean = 0, T stddev = 1, bool requires_grad = true);
+        static std::shared_ptr<Tensor<T>> create(xt::dynamic_shape<size_t> dim, bool requires_grad = true);
+        static std::shared_ptr<Tensor<T>> create(xt::dynamic_shape<size_t> dim, xt::xarray<T> values, bool requires_grad = true);
+        static std::shared_ptr<Tensor<T>> create(xt::dynamic_shape<size_t> dim, xt::xarray<T> values, std::shared_ptr<nn::Operation::IOperation<T>> stream, bool requires_grad = true);
+        static std::shared_ptr<Tensor<T>> zeros(xt::dynamic_shape<size_t> dim, bool requires_grad = true);
+        static std::shared_ptr<Tensor<T>> ones(xt::dynamic_shape<size_t> dim, bool requires_grad = true);
+        static std::shared_ptr<Tensor<T>> random(xt::dynamic_shape<size_t> dim, T min = 0, T max = 1, bool requires_grad = true);
+        static std::shared_ptr<Tensor<T>> normal(xt::dynamic_shape<size_t> dim, T mean = 0, T stddev = 1, bool requires_grad = true);
 
         // gradient
         void accumulateGrad(const xt::xarray<T>& add_grad);
@@ -72,8 +72,8 @@ namespace nn::tensor
 
         // size etc...
         int size() const;
-        std::vector<std::size_t> shape() const;
-        void reshape(std::vector<std::size_t> dim);
+        xt::dynamic_shape<size_t> shape() const;
+        void reshape(xt::dynamic_shape<size_t> dim);
 
         // for user
         void display() const;
