@@ -17,4 +17,17 @@ namespace nn::loss
         auto sub = math::abs(pred - real);
         return math::reduceMean(sub);
     }
+
+    template <typename T>
+    std::shared_ptr<Tensor<T>> categoricalCrossEntropy(std::shared_ptr<Tensor<T>> pred, std::shared_ptr<Tensor<T>> real, T epsilon = 1e-10) {
+        // to avoid log(0)
+        auto log_prod = math::log(pred + epsilon) * real;
+
+        // sum over the axis 0 to have (bs, )
+        T opp = (T)-1;
+        auto b_cce = math::reduceSum(opp * log_prod, {1});
+        std::cout << xt::adapt(b_cce->shape()) << std::endl;
+
+        return math::reduceMean(b_cce);
+    }
 } // namespace nn::Loss

@@ -40,4 +40,16 @@ namespace nn::math
         result->addChild(input);
         return result;
     }
+
+    template <typename T>
+    std::shared_ptr<tensor::Tensor<T>> softmax(std::shared_ptr<tensor::Tensor<T>> input) {
+        // First make a forward pass with the operation
+        xt::xarray<T> valResult = nn::Operation::Softmax<T>->forward({input->getValues()});
+
+        // get the result and create a tensor with same shape -> set the result data inside
+        auto result = tensor::Tensor<T>::create(valResult.shape(), valResult, nn::Operation::Softmax<T>);
+
+        result->addChild(input);
+        return result;
+    }
 } // namespace nn::math

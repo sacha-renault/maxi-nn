@@ -107,11 +107,78 @@ namespace nn::Operation
                     // If no axis is provided, replicate the gradient to match the input shape
                     grad_wrt_input[0] = xt::broadcast(output_grads, child.shape());
                 } else {
-                    // Expand gradients to the shape of the original input
-                    grad_wrt_input[0] = xt::broadcast(output_grads, child.shape());
+                    // Set 1 in the axes where reduction happened
+                    auto target = child.shape();
+                    int i = 0;
+                    for (std::size_t i = 0; i < target.size(); ++i) {
+                        if (std::find(axis.begin(), axis.end(), i) != axis.end()) {
+                            target[i] = 1;  // Reduction axis will be 1
+                        }
+                    }
+
+                    // TODO
+                    auto reshaped_grads = output_grads.reshape(target);
+                    auto broadcasted = xt::broadcast(output_grads, child.shape());
+                    std::cout << "Broadcast " << xt::adapt(broadcasted.shape()) << std::endl;
+                    std::cout <<  "Child " <<xt::adapt(child.shape()) << std::endl;
+                    std::cout << "Target "<<xt::adapt(target) << std::endl;
+                    grad_wrt_input[0] = broadcasted;
                 }
                 return grad_wrt_input;
             }
         );
     }
+
+    template <typename T>
+    std::shared_ptr<IOperation<T>> Softmax = std::make_shared<IOperation<T>>(
+        [](const std::vector<std::reference_wrapper<const xt::xarray<T>>>& children_values) -> xt::xarray<T> {
+            // Ensure 1 child
+            if (children_values.size() != 1) {
+                throw std::runtime_error("Softmax must have exactly one children");
+            }
+
+            // Get ref
+            const auto& child = children_values[0].get();
+
+            // Ensure rank
+            if (child.shape().size() != 2 || child.shape({1}) == 1) {
+                throw std::runtime_error("Softmax must have (bs, num_input) as input");
+            }
+
+            // compute softmax batch-wise
+            xt::xarray<T> max_vals = xt::amax(child, {1}, xt::keep_dims);
+            xt::xarray<T> exp_vals = xt::exp(child - max_vals);
+            xt::xarray<T> sum_exp_vals = xt::sum(exp_vals, {1}, xt::keep_dims);
+
+            // Add a small constant to avoid division by zero
+            const T epsilon = 1e-10;
+            sum_exp_vals += epsilon;
+
+            return exp_vals / sum_exp_vals;
+        },
+        [](const std::vector<std::reference_wrapper<const xt::xarray<T>>>& children_values,
+           const xt::xarray<T>& output_vals,
+           const xt::xarray<T>& output_grads) -> std::vector<xt::xarray<T>> {
+                const auto& child = children_values[0].get();
+            // Compute gradients
+            // Use the Jacobian matrix of the softmax function
+            auto eye = xt::eye(output_vals.shape(1));
+
+            // Compute the Jacobian
+            auto J = xt::expand_dims(output_vals, 1) * ((xt::expand_dims(eye, 0) - xt::expand_dims(output_vals, 2)));
+            auto localGrad = xt::sum(J, {2}); // sum over z axis to get same shape as grad of tensor
+
+            // computation of global gradient
+            auto d_softmax = localGrad * output_grads;
+
+            // std::cout << "\nlocal : " << std::endl;
+            // std::cout << localGrad << std::endl;
+            // std::cout << "\nparent grad : " << std::endl;
+            // std::cout << output_grads << std::endl;
+            // std::cout << "\nglobal : " << std::endl;
+            // std::cout << d_softmax << std::endl;
+
+            return {d_softmax};
+        }
+    );
 } // namespace nn::Operation

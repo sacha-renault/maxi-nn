@@ -33,62 +33,69 @@ using namespace nn;
 //     return 0;
 // }
 
-int main() {
-    ulong bs = 128;
-    ulong outputsize = 1;
-    int num_epoch = 500;
-    float lr = 1e-2;
+// int main() {
+//     ulong bs = 12;
+//     ulong outputsize = 5;
+//     int num_epoch = 100;
+//     float lr = 1e-2;
 
-    auto input = tensor::FTensor::random({bs, 256}, -1, 1);
+//     auto input = tensor::FTensor::random({bs, 256}, -1, 1);
 
-    float l1 = std::sqrt(6.0 / (256 + 128));
+//     float l1 = std::sqrt(6.0 / (256 + 128));
 
-    auto layer1 = layers::FFcc(256, 128, nn::math::tanh<float>);
-    auto layer2 = layers::FFcc(128, 64, nn::math::tanh<float>);
-    auto layer3 = layers::FFcc(64, 32, nn::math::tanh<float>);
-    auto layer4 = layers::FFcc(32, outputsize, nn::math::tanh<float>);
+//     auto layer1 = layers::FFcc(256, 128, nn::math::tanh<float>);
+//     auto layer2 = layers::FFcc(128, 64, nn::math::tanh<float>);
+//     auto layer3 = layers::FFcc(64, 32, nn::math::tanh<float>);
+//     auto layer4 = layers::FFcc(32, outputsize, nn::math::softmax<float>);
 
-    auto layers_vec = {layer1, layer2, layer3, layer4};
+//     auto layers_vec = {layer1, layer2, layer3, layer4};
 
-    auto y_true = tensor::FTensor::random({bs, outputsize}, -1, 1);
+//     auto y_true = tensor::FTensor::zeros({bs, outputsize});
 
-    auto x = layer1(input);
-    x = layer2(x);
-    x = layer3(x);
-    x = layer4(x);
+//     for (size_t i = 0 ; i < bs ; ++i) {
+//         y_true->getItem({i, i % outputsize}) = 1;
+//     }
 
-    auto batch_loss = nn::loss::meanSquaredError(x, y_true);
+//     auto x = layer1(input);
+//     x = layer2(x);
+//     x = layer3(x);
+//     x = layer4(x);
 
-    auto graph = graph::FComputationGraph(batch_loss);
+//     auto batch_loss = nn::loss::categoricalCrossEntropy(x, y_true);
 
-    for (int i = 0 ; i < num_epoch ; ++i) {
-        auto rnd = tensor::FTensor::normal(input->shape());
-        graph.forward();
-        graph.zeroGrad();
-        graph.backward();
+//     auto graph = graph::FComputationGraph(batch_loss);
+
+//     for (int i = 0 ; i < num_epoch ; ++i) {
+//         auto rnd = tensor::FTensor::normal(input->shape());
+//         graph.forward();
+
+//         // std::cout << x->getValues() << std::endl;
+
+//         graph.zeroGrad();
+//         graph.backward();
 
 
-        for (auto node : layers_vec) {
-            auto w = node.getWeights();
-            auto gradsw = w->getGrad();
-            auto valuesw = w->getValues();
-            w->setValues(valuesw - gradsw*lr);
+//         for (auto node : layers_vec) {
+//             auto w = node.getWeights();
+//             auto gradsw = w->getGrad();
+//             auto valuesw = w->getValues();
+//             w->setValues(valuesw - gradsw*lr);
 
-            auto b = node.getWeights();
-            auto gradsb = b->getGrad();
-            auto valuesb = b->getValues();
-            b->setValues(valuesb - gradsb*lr);
-        }
+//             auto b = node.getWeights();
+//             auto gradsb = b->getGrad();
+//             auto valuesb = b->getValues();
+//             b->setValues(valuesb - gradsb*lr);
+//         }
 
-        std::cout << " iteration : " << i + 1 << " ; Loss : " << batch_loss->getItem({0}) << " ; LR : " << lr << std::endl;
+//         std::cout << " iteration : " << i + 1 << " ; Loss : " << batch_loss->getItem({0}) << " ; LR : " << lr << std::endl;
 
-        if ((i + 1) % 50 == 0) {
-            lr *= 0.9;
-        }
-    }
+//         if ((i + 1) % 50 == 0) {
+//             lr *= 0.9;
+//         }
+//     }
 
-    return 0;
-}
+//     return 0;
+// }
 
 // int main() {
 //     ulong bs = 1;
@@ -143,12 +150,23 @@ int main() {
 //     return 0;
 // }
 
-// int main() {
-//     auto y1 = tensor::FTensor::ones({128, 784}) * 0.5f;
-//     auto y2 = tensor::FTensor::zeros({128, 784});
+int main() {
+    auto input = tensor::FTensor::create({2, 2}, {
+        {0.2, 1 ,0.2},
+        {0.5, 0.5, 0.5}
+    });
+    auto y = tensor::FTensor::create({2, 2}, {
+        {0, 1 ,0},
+        {0, 0, 1}
+    });
 
-//     auto result = loss::meanAbsoluteError(y1, y2);
+    auto output = nn::math::softmax(input);
+    output->display();
+    auto result = loss::categoricalCrossEntropy(output, y);
+    auto graph = graph::FComputationGraph(result);
+    graph.backward();
 
-//     result->display();
-//     return 0;
-// }
+    result->display();
+    input->displayGrad();
+    return 0;
+}
