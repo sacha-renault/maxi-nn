@@ -1,10 +1,8 @@
-#include "Operation.hpp"
-#include "AddOperation.hpp"
-#include "MulOperation.hpp"
+#include "IOperation.hpp"
+#include "ArithmeticOperation.hpp"
+#include "ElementwiseOperation.hpp"
+#include "MatOperation.hpp"
 #include "SubOperation.hpp"
-#include "ElementWiseOperation.hpp"
-#include "TensorwiseOperation.hpp"
-#include "DivOperation.hpp"
 
 // namespace nn::Operation
 // {

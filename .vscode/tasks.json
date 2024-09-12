@@ -10,9 +10,11 @@
                 // "${workspaceFolder}/src/internal/*.cpp",
                 "-g",
                 "-I/usr/include/eigne3",
+                "-I/home/wsl/Projects/PRIVE/vcpkg/installed/x64-linux/include/",
                 "${workspaceFolder}/main.cpp",
                 "-o",
                 "${workspaceFolder}/main",
+                "-lopenblas"
             ],
             "options": {
                 "cwd": "${fileDirname}"

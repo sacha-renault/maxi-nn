@@ -8,36 +8,35 @@ namespace nn::tensor
     Tensor<T>::Tensor() : total_size_(1), values_(0){}
 
     template <typename T>
-    Tensor<T>::Tensor(std::vector<int> dims, bool requires_grad) : total_size_(1), requires_grad_(requires_grad) {
-        for(int i = 0 ; i < dims.size() ; ++i) {
-            total_size_ *= dims[i];
-        }
+    Tensor<T>::Tensor(xt::dynamic_shape<size_t> dims, bool requires_grad)
+        : dimensions_(dims), requires_grad_(requires_grad), stream_ptr(nullptr)
+    {
+        // Calculate total size
+        total_size_ = std::accumulate(dims.begin(), dims.end(), 1, std::multiplies<int>());
 
-        // init values with empty array
-        values_ = Eigen::Matrix<T, Eigen::Dynamic, 1>(total_size_);
+        // Initialize values array with given dimensions
+        values_ = xt::xarray<T>::from_shape(dims);
 
-        // copy dimension into internal
-        dimensions_ = dims;
-
-        // only allocate grad if required
+        // Initialize gradient array if required
         if (requires_grad_) {
-            grads_ = Eigen::Matrix<T, Eigen::Dynamic, 1>(total_size_);
-            grads_.setConstant(0);
+            grads_ = xt::zeros<T>(dims);
         }
     }
 
     template <typename T>
-    Tensor<T>::Tensor(std::vector<int> dim, Eigen::Matrix<T, Eigen::Dynamic, 1> values, bool requires_grad)
-        : Tensor<T>(dim, requires_grad) {
-        values_ = values; // copy values
-        stream_ptr = nullptr; // no registered operation
+    Tensor<T>::Tensor(xt::dynamic_shape<size_t> dims, xt::xarray<T> values, bool requires_grad)
+        : Tensor<T>(dims, requires_grad)
+    {
+        values_ = values;  // Copy provided values
+        stream_ptr = nullptr;  // No operation registered
     }
 
     template <typename T>
-    Tensor<T>::Tensor(std::vector<int> dim, Eigen::Matrix<T, Eigen::Dynamic, 1> values, std::shared_ptr<nn::Operation::IOperation<T>> stream, bool requires_grad)
-        : Tensor<T>(dim, requires_grad) {
-        values_ = values; // copy values
-        stream_ptr = stream;
+    Tensor<T>::Tensor(xt::dynamic_shape<size_t> dims, xt::xarray<T> values, std::shared_ptr<nn::Operation::IOperation<T>> stream, bool requires_grad)
+        : Tensor<T>(dims, requires_grad)
+    {
+        values_ = values;  // Copy provided values
+        stream_ptr = stream;  // Register operation
     }
 
     template <typename T>
@@ -46,172 +45,114 @@ namespace nn::tensor
     }
 
     template <typename T>
-    std::shared_ptr<Tensor<T>> Tensor<T>::create(std::vector<int> dim, bool requires_grad) {
+    std::shared_ptr<Tensor<T>> Tensor<T>::create(xt::dynamic_shape<size_t> dim, bool requires_grad) {
         return std::shared_ptr<Tensor<T>>(new Tensor<T>(dim, requires_grad));
     }
 
     template <typename T>
-    std::shared_ptr<Tensor<T>> Tensor<T>::create(std::vector<int> dim, Eigen::Matrix<T, Eigen::Dynamic, 1> values, bool requires_grad) {
+    std::shared_ptr<Tensor<T>> Tensor<T>::create(xt::dynamic_shape<size_t> dim, xt::xarray<T> values, bool requires_grad) {
         return std::shared_ptr<Tensor<T>>(new Tensor<T>(dim, values, requires_grad));
     }
 
     template <typename T>
-    std::shared_ptr<Tensor<T>> Tensor<T>::create(std::vector<int> dim, Eigen::Matrix<T, Eigen::Dynamic, 1> values, std::shared_ptr<nn::Operation::IOperation<T>> stream, bool requires_grad) {
+    std::shared_ptr<Tensor<T>> Tensor<T>::create(xt::dynamic_shape<size_t> dim, xt::xarray<T> values, std::shared_ptr<nn::Operation::IOperation<T>> stream, bool requires_grad) {
         return std::shared_ptr<Tensor<T>>(new Tensor<T>(dim, values, stream, requires_grad));
     }
 
     template <typename T>
-    std::shared_ptr<Tensor<T>> Tensor<T>::zeros(std::vector<int> dim, bool requires_grad) {
-        auto new_tensor = Tensor::create(dim, requires_grad);
-        Eigen::Matrix<T, Eigen::Dynamic, 1> values = Eigen::Matrix<T, Eigen::Dynamic, 1>::Zero(new_tensor->size());
-        new_tensor->fill(values);
+    std::shared_ptr<Tensor<T>> Tensor<T>::zeros(xt::dynamic_shape<size_t> dims, bool requires_grad) {
+        auto values = xt::zeros<T>(dims);
+        auto new_tensor = Tensor::create(dims, values, requires_grad);
         return new_tensor;
     }
 
     template <typename T>
-    std::shared_ptr<Tensor<T>> Tensor<T>::ones(std::vector<int> dim, bool requires_grad) {
-        auto new_tensor = Tensor::create(dim, requires_grad);
-        Eigen::Matrix<T, Eigen::Dynamic, 1> values = Eigen::Matrix<T, Eigen::Dynamic, 1>::Ones(new_tensor->size());
-        new_tensor->fill(values);
+    std::shared_ptr<Tensor<T>> Tensor<T>::ones(xt::dynamic_shape<size_t> dims, bool requires_grad) {
+        auto values = xt::ones<T>(dims);
+        auto new_tensor = Tensor::create(dims, values, requires_grad);
         return new_tensor;
     }
 
     template <typename T>
-    std::shared_ptr<Tensor<T>> Tensor<T>::random(std::vector<int> dim, T min, T max, bool requires_grad) {
-        auto new_tensor = Tensor::create(dim, requires_grad);
-        Eigen::Matrix<T, Eigen::Dynamic, 1> values = Eigen::Matrix<T, Eigen::Dynamic, 1>::Random(new_tensor->size());
-        values = (max - min) * (values.array() + 1.0) / 2.0 + min;  // Scale and shift to [min, max]
-        new_tensor->fill(values);
-        return new_tensor;
-    }
+    std::shared_ptr<Tensor<T>> Tensor<T>::random(xt::dynamic_shape<size_t> dims, T min, T max, bool requires_grad) {
+        std::random_device rd;  // Obtain a random number from hardware
+        std::mt19937 gen(rd()); // Seed the generator
+        std::uniform_real_distribution<> dis(min, max); // Define the range
 
-    template <typename T>
-    std::shared_ptr<Tensor<T>> Tensor<T>::normal(std::vector<int> dim, T mean, T stddev, bool requires_grad) {
-        std::random_device rd;
-        std::mt19937 gen(rd());
-        std::normal_distribution<T> dist(mean, stddev);
-        auto new_tensor = Tensor::create(dim, requires_grad);
-        Eigen::Matrix<T, Eigen::Dynamic, 1> values = Eigen::Matrix<T, Eigen::Dynamic, 1>::NullaryExpr(new_tensor->size(), [&]() { return dist(gen); });
-        new_tensor->fill(values);
-        return new_tensor;
-    }
-
-    template <typename T>
-    int Tensor<T>::computeIndex(const std::vector<int>& multi_dim_index) const {
-        int index = 0;
-        int multiplier = 1;
-        if (multi_dim_index.size() != dimensions_.size()) {
-            throw std::runtime_error("Cannot get the index with indices size != rank of the tensor");
+        xt::xarray<T> values = xt::empty<T>(dims);
+        auto it = values.begin();
+        while (it != values.end()) {
+            *it++ = dis(gen);
         }
-        for (int i = dimensions_.size() - 1; i >= 0; --i) {
-            index += multi_dim_index[i] * multiplier;
-            multiplier *= dimensions_[i];
-        }
-        return index;
+        auto new_tensor = Tensor::create(dims, values, requires_grad);
+        return new_tensor;
     }
 
     template <typename T>
-    void Tensor<T>::displayInternal(const Eigen::Matrix<T, Eigen::Dynamic, 1>& displayable) const {
-        int numDims = dimensions_.size();
+    std::shared_ptr<Tensor<T>> Tensor<T>::normal(xt::dynamic_shape<size_t> dims, T mean, T stddev, bool requires_grad) {
+        std::random_device rd;  // Obtain a random number from hardware
+        std::mt19937 gen(rd()); // Seed the generator
+        std::normal_distribution<> dis(mean, stddev); // Define the distribution
 
-        if (numDims == 1) {
-            std::cout << "[ ";
-            for (int i = 0; i < displayable.rows(); ++i) {
-                std::cout << displayable(i);
-                if (i < displayable.rows() - 1) std::cout << ", ";
-            }
-            std::cout << " ]" << std::endl;
-        } else if (numDims == 2) {
-            std::cout << "[" << std::endl;
-            int numRows = dimensions_[0];
-            int numCols = dimensions_[1];
-            for (int i = 0; i < numRows; ++i) {
-                std::cout << "    [ ";
-                for (int j = 0; j < numCols; ++j) {
-                    std::cout << displayable(i * numCols + j);
-                    if (j < numCols - 1) std::cout << ", ";
-                }
-                std::cout << " ]";
-                if (i < numRows - 1) std::cout << std::endl;
-            }
-            std::cout << std::endl << "]" << std::endl;
-        } else {
-            // For 3D or higher dimensions, you need to calculate offsets correctly
-            std::function<void(int, int)> displayRecursively =
-                [&](int offset, int dimIndex) {
-                    if (dimIndex == numDims - 2) {
-                        std::cout << "    [";
-                        int numRows = dimensions_[dimIndex];
-                        int numCols = dimensions_[dimIndex + 1];
-                        for (int i = 0; i < numRows; ++i) {
-                            std::cout << std::endl << "        [ ";
-                            for (int j = 0; j < numCols; ++j) {
-                                std::cout << displayable(offset + i * numCols + j);
-                                if (j < numCols - 1) std::cout << ", ";
-                            }
-                            std::cout << " ]";
-                        }
-                        std::cout << std::endl << "    ]";
-                    } else {
-                        int dimSize = dimensions_[dimIndex];
-                        std::cout << "[" << std::endl;
-                        for (int i = 0; i < dimSize; ++i) {
-                            std::cout << "    ";
-                            displayRecursively(offset + i * dimensions_[dimIndex + 1], dimIndex + 1);
-                            if (i < dimSize - 1) std::cout << ",";
-                            std::cout << std::endl;
-                        }
-                        std::cout << "]";
-                    }
-                };
-
-            std::cout << "[" << std::endl;
-            displayRecursively(0, 0);
-            std::cout << std::endl << "]" << std::endl;
+        xt::xarray<T> values = xt::empty<T>(dims);
+        auto it = values.begin();
+        while (it != values.end()) {
+            *it++ = dis(gen);
         }
+        auto new_tensor = Tensor::create(dims, values, requires_grad);
+        return new_tensor;
     }
 
     template <typename T>
     void Tensor<T>::display() const {
-        this->displayInternal(values_);
+        std::cout << values_ << std::endl;
     }
 
     template <typename T>
     void Tensor<T>::displayGrad() const {
-        this->displayInternal(grads_);
+        std::cout << grads_ << std::endl;
     }
 
     template <typename T>
-    T& Tensor<T>::operator[](const std::vector<int>& multi_dim_index) {
-        return values_(computeIndex(multi_dim_index));
+    T& Tensor<T>::operator[](const xt::xindex& idx) {
+        return values_.element(idx.begin(), idx.end());;
     }
 
     template <typename T>
-    T& Tensor<T>::getItem(const std::vector<int>& multi_dim_index) {
-        return (*this)[multi_dim_index];
+    T& Tensor<T>::getItem(const xt::xindex& idx) {
+        return (*this)[idx];
     }
 
     template <typename T>
-    const Eigen::Matrix<T, Eigen::Dynamic, 1>& Tensor<T>::getValues() {
+    const xt::xarray<T>& Tensor<T>::getValues() {
         return values_;
     }
 
     template <typename T>
-    void Tensor<T>::setGrad(Eigen::Matrix<T, Eigen::Dynamic, 1> grads) {
-        grads_ = std::move(grads);
+    void Tensor<T>::setGrad(xt::xarray<T> grads) {
+        if (grads.shape() == grads_.shape()) {
+            grads_ = std::move(grads);
+        } else {
+            throw std::runtime_error("Cast is allowed only on grad accumulation");
+        }
+    }
+
+    template <typename T>
+    const xt::xarray<T>& Tensor<T>::getGrad() const {
+        return grads_;
     }
 
     template <typename T>
     void Tensor<T>::resetGrad() {
         if (requires_grad_) {
-            grads_.setConstant(0);
+            grads_.fill(T(0));
         }
     }
 
     template <typename T>
     void Tensor<T>::setOnesGrad() {
         if (requires_grad_) {
-            grads_.setConstant(1);
+            grads_.fill(T(1));
         }
     }
 
@@ -227,12 +168,16 @@ namespace nn::tensor
     };
 
     template <typename T>
-    void Tensor<T>::setValues(Eigen::Matrix<T, Eigen::Dynamic, 1> new_values) {
-        values_ = new_values; // copy into values_
+    void Tensor<T>::setValues(xt::xarray<T> new_values) {
+        if (values_.shape() == new_values.shape()) {
+            values_ = std::move(new_values);
+        } else {
+            throw std::runtime_error("Cast is allowed only on grad accumulation");
+        }
     }
 
     template <typename T>
-    const Eigen::Matrix<T, Eigen::Dynamic, 1>& Tensor<T>::getValues() const {
+    const xt::xarray<T>& Tensor<T>::getValues() const {
         return values_;
     }
 
@@ -242,75 +187,82 @@ namespace nn::tensor
     }
 
     template <typename T>
-    std::vector<int> Tensor<T>::shape() const {
-        return dimensions_;
+    xt::dynamic_shape<size_t> Tensor<T>::shape() const {
+        return values_.shape();
     }
 
     template <typename T>
     void Tensor<T>::fill(T value) {
-        values_.setConstant(value);
+        values_.fill(T(value));
     }
 
     template <typename T>
-    void Tensor<T>::fill(Eigen::Matrix<T, Eigen::Dynamic, 1> values) {
+    void Tensor<T>::fill(xt::xarray<T> values) {
         values_ = std::move(values);
     }
 
     template <typename T>
-    void Tensor<T>::accumulateGrad(const Eigen::Matrix<T, Eigen::Dynamic, 1>& add_grad) {
-        if (requires_grad_) {
-            if (grads_.size() == add_grad.size()) {
+    void Tensor<T>::accumulateGrad(const xt::xarray<T>& add_grad) {
+        if (grads_.shape() == add_grad.shape()) {
             grads_ += add_grad;
-            } else {
-                throw std::runtime_error("Gradient dimensions do not match.");
+        } else {
+            // Calculate the sum axes needed to accumulate add_grad
+            xt::dynamic_shape<size_t> sum_axes;
+            std::size_t dims = add_grad.shape().size();
+            for (std::size_t i = 0; i < dims; ++i) {
+                if (grads_.shape()[i] != add_grad.shape()[i]) {
+                    sum_axes.push_back(i);
+                }
             }
+
+            // Sum over the axes where shapes don't match
+            xt::xarray<T> reduced_add_grad = add_grad;
+            for (int i = sum_axes.size() - 1 ; i >= 0 ; --i) {
+                reduced_add_grad = xt::sum(reduced_add_grad, sum_axes[i]);
+            }
+            grads_ += xt::broadcast(reduced_add_grad, grads_.shape());
         }
     }
 
     template <typename T>
     void Tensor<T>::backward() {
         if (stream_ptr) {
-            int numChildren = children_.size();
-            int numRows = children_[0]->size();
+            // Create an array to hold all children's values
+            std::vector<std::reference_wrapper<const xt::xarray<T>>> children_values;
 
-            // Matrix to store mapped columns
-            Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic> children_values(numRows, numChildren);
-
-            // Use Eigen::Map to reference each child's values. No cpy
-            for (int i = 0; i < numChildren; ++i) {
-                Eigen::Map<Eigen::Matrix<T, Eigen::Dynamic, 1>> childMap(children_[i]->values_.data(), numRows);
-                children_values.col(i) = childMap;
+            // Point to actual children values
+            for (const auto& child : children_) {
+                children_values.emplace_back(child->values_);
             }
 
-            // compute the gradient
-            auto grads = stream_ptr->backward(children_values, values_, grads_);
+            // Compute the gradient
+            std::vector<xt::xarray<T>> grads = stream_ptr->backward(children_values, values_, grads_);
 
             // Propagate the gradients to all the children
-            for (int i = 0; i < numChildren; ++i) {
-                children_[i]->accumulateGrad(grads.col(i));
+            for (int i = 0; i < children_.size(); ++i) {
+                children_[i]->accumulateGrad(grads[i]);
             }
         }
     }
+
+
 
     template <typename T>
     void Tensor<T>::forward() {
         if (stream_ptr) {
-            int numChildren = children_.size();
-            int numRows = values_.rows();
+            // Create an array to hold all children's values
+            std::vector<std::reference_wrapper<const xt::xarray<T>>> children_values;
 
-            // Matrix to store mapped columns
-            Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic> children_values(numRows, numChildren);
-
-            // Use Eigen::Map to reference each child's values. No cpy
-            for (int i = 0; i < numChildren; ++i) {
-                Eigen::Map<Eigen::Matrix<T, Eigen::Dynamic, 1>> childMap(children_[i]->values_.data(), numRows);
-                children_values.col(i) = childMap;
+            // Point to actual children values
+            for (const auto& child : children_) {
+                children_values.emplace_back(child->values_);
             }
 
-            // compute the next values_
+            // Compute the next values_
             values_ = stream_ptr->forward(children_values);
         }
     }
+
 
     // explicit instanciation of the class
     template class Tensor<float>;

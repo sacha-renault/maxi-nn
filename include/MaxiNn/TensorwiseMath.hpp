@@ -5,46 +5,39 @@
 namespace nn::math
 {
     template <typename T>
-    std::shared_ptr<tensor::Tensor<T>> reduceMean(std::shared_ptr<tensor::Tensor<T>> input) {
-        auto mean_forward = [](const Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic>& input) -> Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic> {
-            // Compute the mean of all elements
-            T mean_value = input.mean();
-            Eigen::Matrix<T, Eigen::Dynamic, 1> result(1, 1);
-            result(0, 0) = mean_value;
-            return result;
-        };
+    std::shared_ptr<tensor::Tensor<T>> dot(std::shared_ptr<tensor::Tensor<T>> lt, std::shared_ptr<tensor::Tensor<T>> rt) {
+        // First make a forward pass with the operation
+        xt::xarray<T> valResult = nn::Operation::Dot<T>->forward({lt->getValues(), rt->getValues()});
 
-        auto mean_backward = [](const Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic>& input, const Eigen::Matrix<T, Eigen::Dynamic, 1>& parent_values, const Eigen::Matrix<T, Eigen::Dynamic, 1>& parent_grads) -> Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic> {
-            // The gradient should be evenly distributed across all elements of the input tensor
-            Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic> grad_output = Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic>::Constant(input.rows(), input.cols(), parent_grads(0, 0) / input.size());
-            return grad_output;
-        };
+        // get the result and create a tensor with same shape -> set the result data inside
+        auto result = tensor::Tensor<T>::create(valResult.shape(), valResult, nn::Operation::Dot<T>);
 
-        auto output_val = mean_forward(input->getValues());
-        auto output = tensor::Tensor<T>::create({1}, output_val, std::make_shared<nn::Operation::TensorWiseOperation<T>>(mean_forward, mean_backward));
-        output->addChild(input);
-        return output;
+        result->addChild(lt);
+        result->addChild(rt);
+        return result;
     }
 
     template <typename T>
-    std::shared_ptr<tensor::Tensor<T>> reduceSum(std::shared_ptr<tensor::Tensor<T>> input) {
-        auto mean_forward = [](const Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic>& input) -> Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic> {
-            // Compute the mean of all elements
-            T mean_value = input.sum();
-            Eigen::Matrix<T, Eigen::Dynamic, 1> result(1, 1);
-            result(0, 0) = mean_value;
-            return result;
-        };
+    std::shared_ptr<tensor::Tensor<T>> reduceSum(std::shared_ptr<tensor::Tensor<T>> input, xt::dynamic_shape<size_t> axis = xt::dynamic_shape<size_t>()) {
+        // First make a forward pass with the operation
+        xt::xarray<T> valResult = nn::Operation::ReduceSum<T>(axis)->forward({input->getValues()});
 
-        auto mean_backward = [](const Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic>& input, const Eigen::Matrix<T, Eigen::Dynamic, 1>& parent_values, const Eigen::Matrix<T, Eigen::Dynamic, 1>& parent_grads) -> Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic> {
-            // The gradient should be evenly distributed across all elements of the input tensor
-            Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic> grad_output = Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic>::Constant(input.rows(), input.cols(), parent_grads(0, 0));
-            return grad_output;
-        };
+        // get the result and create a tensor with same shape -> set the result data inside
+        auto result = tensor::Tensor<T>::create(valResult.shape(), valResult, nn::Operation::ReduceSum<T>(axis));
 
-        auto output_val = mean_forward(input->getValues());
-        auto output = tensor::Tensor<T>::create({1}, output_val, std::make_shared<nn::Operation::TensorWiseOperation<T>>(mean_forward, mean_backward));
-        output->addChild(input);
-        return output;
+        result->addChild(input);
+        return result;
+    }
+
+    template <typename T>
+    std::shared_ptr<tensor::Tensor<T>> reduceMean(std::shared_ptr<tensor::Tensor<T>> input, xt::dynamic_shape<size_t> axis = xt::dynamic_shape<size_t>()) {
+        // First make a forward pass with the operation
+        xt::xarray<T> valResult = nn::Operation::ReduceMean<T>(axis)->forward({input->getValues()});
+
+        // get the result and create a tensor with same shape -> set the result data inside
+        auto result = tensor::Tensor<T>::create(valResult.shape(), valResult, nn::Operation::ReduceMean<T>(axis));
+
+        result->addChild(input);
+        return result;
     }
 } // namespace nn::math

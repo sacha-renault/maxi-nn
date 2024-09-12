@@ -5,15 +5,13 @@ using namespace nn::tensor;
 
 template <typename T>
 std::shared_ptr<Tensor<T>> operator+(std::shared_ptr<Tensor<T>> lhs, std::shared_ptr<Tensor<T>> rhs) {
-    // Ensure the tensors have the same size
-    if (lhs->getValues().size() != rhs->getValues().size()) {
-        throw std::runtime_error("Tensors must have the same size to add.");
-    }
+    // First make a forward pass with the operation
+    xt::xarray<T> valResult = nn::Operation::Add2<T>->forward({lhs->getValues(), rhs->getValues()});
 
-    // Create a new Tensor for the result of the addition
-    std::vector<int> dims = lhs->shape();
-    Eigen::Matrix<T, Eigen::Dynamic, 1> valResult = (lhs->getValues() + rhs->getValues()).eval();
-    std::shared_ptr<Tensor<T>> result = Tensor<T>::create(dims, valResult, std::make_shared<nn::Operation::AddOperation<T>>());
+    // get the result and create a tensor with same shape -> set the result data inside
+    std::shared_ptr<Tensor<T>> result = Tensor<T>::create(valResult.shape(), valResult, nn::Operation::Add2<T>);
+
+    // add the two children in the result
     result->addChild(lhs);
     result->addChild(rhs);
     return result;
@@ -21,15 +19,13 @@ std::shared_ptr<Tensor<T>> operator+(std::shared_ptr<Tensor<T>> lhs, std::shared
 
 template <typename T>
 std::shared_ptr<Tensor<T>> operator*(std::shared_ptr<Tensor<T>> lhs, std::shared_ptr<Tensor<T>> rhs) {
-    // Ensure the tensors have the same size
-    if (lhs->getValues().size() != rhs->getValues().size()) {
-        throw std::runtime_error("Tensors must have the same size to add.");
-    }
+    // First make a forward pass with the operation
+    xt::xarray<T> valResult = nn::Operation::Mul2<T>->forward({lhs->getValues(), rhs->getValues()});
 
-    // Create a new Tensor for the result of the addition
-    std::vector<int> dims = lhs->shape();
-    Eigen::Matrix<T, Eigen::Dynamic, 1> valResult = (lhs->getValues().array() * rhs->getValues().array()).eval();
-    std::shared_ptr<Tensor<T>> result = Tensor<T>::create(dims, valResult, std::make_shared<nn::Operation::MulOperation<T>>());
+    // get the result and create a tensor with same shape -> set the result data inside
+    std::shared_ptr<Tensor<T>> result = Tensor<T>::create(valResult.shape(), valResult, nn::Operation::Mul2<T>);
+
+    // add the two children in the result
     result->addChild(lhs);
     result->addChild(rhs);
     return result;
@@ -37,18 +33,16 @@ std::shared_ptr<Tensor<T>> operator*(std::shared_ptr<Tensor<T>> lhs, std::shared
 
 template <typename T>
 std::shared_ptr<Tensor<T>> operator*(std::shared_ptr<Tensor<T>> lhs, T rhst) {
-    // Get the dimensions of the lhs tensor
-    std::vector<int> dims = lhs->shape();
 
     // Create a new Tensor for the scalar value
-    auto rhs = Tensor<T>::create(dims);
+    auto rhs = Tensor<T>::create(lhs->shape());
     rhs->fill(rhst);  // Fill rhs tensor with the scalar value
 
     // Perform element-wise multiplication
-    Eigen::Matrix<T, Eigen::Dynamic, 1> valResult = (lhs->getValues().array() * rhs->getValues().array()).eval();
+    xt::xarray<T> valResult = nn::Operation::Mul2<T>->forward({lhs->getValues(), rhs->getValues()});
 
     // Create the result tensor with the computed values
-    std::shared_ptr<Tensor<T>> result = Tensor<T>::create(dims, valResult, std::make_shared<nn::Operation::MulOperation<T>>());
+    std::shared_ptr<Tensor<T>> result = Tensor<T>::create(valResult.shape(), valResult, nn::Operation::Mul2<T>);
 
     // Add lhs and rhs as children to the result tensor
     result->addChild(lhs);
@@ -64,15 +58,13 @@ std::shared_ptr<Tensor<T>> operator*(T lhst, std::shared_ptr<Tensor<T>> rhs) {
 
 template <typename T>
 std::shared_ptr<Tensor<T>> operator-(std::shared_ptr<Tensor<T>> lhs, std::shared_ptr<Tensor<T>> rhs) {
-    // Ensure the tensors have the same size
-    if (lhs->getValues().size() != rhs->getValues().size()) {
-        throw std::runtime_error("Tensors must have the same size to add.");
-    }
+    // First make a forward pass with the operation
+    xt::xarray<T> valResult = nn::Operation::Sub2<T>->forward({lhs->getValues(), rhs->getValues()});
 
-    // Create a new Tensor for the result of the addition
-    std::vector<int> dims = lhs->shape();
-    Eigen::Matrix<T, Eigen::Dynamic, 1> valResult = (lhs->getValues().array() - rhs->getValues().array()).eval();
-    std::shared_ptr<Tensor<T>> result = Tensor<T>::create(dims, valResult, std::make_shared<nn::Operation::SubOperation<T>>());
+    // get the result and create a tensor with same shape -> set the result data inside
+    std::shared_ptr<Tensor<T>> result = Tensor<T>::create(valResult.shape(), valResult, nn::Operation::Sub2<T>);
+
+    // add the two children in the result
     result->addChild(lhs);
     result->addChild(rhs);
     return result;
@@ -80,15 +72,31 @@ std::shared_ptr<Tensor<T>> operator-(std::shared_ptr<Tensor<T>> lhs, std::shared
 
 template <typename T>
 std::shared_ptr<Tensor<T>> operator/(std::shared_ptr<Tensor<T>> lhs, std::shared_ptr<Tensor<T>> rhs) {
-    // Ensure the tensors have the same size
-    if (lhs->getValues().size() != rhs->getValues().size()) {
-        throw std::runtime_error("Tensors must have the same size to divide.");
-    }
+    // First make a forward pass with the operation
+    xt::xarray<T> valResult = nn::Operation::Div2<T>->forward({lhs->getValues(), rhs->getValues()});
 
-    // Create a new Tensor for the result of the division
-    std::vector<int> dims = lhs->shape();
-    Eigen::Matrix<T, Eigen::Dynamic, 1> valResult = (lhs->getValues().array() / rhs->getValues().array()).eval();
-    std::shared_ptr<Tensor<T>> result = Tensor<T>::create(dims, valResult, std::make_shared<nn::Operation::DivOperation<T>>());
+    // get the result and create a tensor with same shape -> set the result data inside
+    std::shared_ptr<Tensor<T>> result = Tensor<T>::create(valResult.shape(), valResult, nn::Operation::Div2<T>);
+
+    // add the two children in the result
+    result->addChild(lhs);
+    result->addChild(rhs);
+    return result;
+}
+
+template <typename T>
+std::shared_ptr<Tensor<T>> operator/(T lhst, std::shared_ptr<Tensor<T>> rhs) {
+    // Create a new Tensor for the scalar value
+    auto lhs = Tensor<T>::create(rhs->shape());
+    lhs->fill(lhst);  // Fill lhs tensor with the scalar value
+
+    // First make a forward pass with the operation
+    xt::xarray<T> valResult = nn::Operation::Div2<T>->forward({lhs->getValues(), rhs->getValues()});
+
+    // get the result and create a tensor with same shape -> set the result data inside
+    std::shared_ptr<Tensor<T>> result = Tensor<T>::create(valResult.shape(), valResult, nn::Operation::Div2<T>);
+
+    // add the two children in the result
     result->addChild(lhs);
     result->addChild(rhs);
     return result;
