@@ -36,17 +36,17 @@ using namespace nn;
 int main() {
     ulong bs = 128;
     ulong outputsize = 1;
-    int num_epoch = 200;
+    int num_epoch = 500;
     float lr = 1e-2;
 
     auto input = tensor::FTensor::random({bs, 256}, -1, 1);
 
     float l1 = std::sqrt(6.0 / (256 + 128));
 
-    auto layer1 = layers::FFcc(256, 128);
-    auto layer2 = layers::FFcc(128, 64);
-    auto layer3 = layers::FFcc(64, 32);
-    auto layer4 = layers::FFcc(32, 1);
+    auto layer1 = layers::FFcc(256, 128, nn::math::tanh<float>);
+    auto layer2 = layers::FFcc(128, 64, nn::math::tanh<float>);
+    auto layer3 = layers::FFcc(64, 32, nn::math::tanh<float>);
+    auto layer4 = layers::FFcc(32, outputsize, nn::math::tanh<float>);
 
     auto layers_vec = {layer1, layer2, layer3, layer4};
 
@@ -81,6 +81,10 @@ int main() {
         }
 
         std::cout << " iteration : " << i + 1 << " ; Loss : " << batch_loss->getItem({0}) << " ; LR : " << lr << std::endl;
+
+        if ((i + 1) % 50 == 0) {
+            lr *= 0.9;
+        }
     }
 
     return 0;

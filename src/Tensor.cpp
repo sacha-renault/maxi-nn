@@ -202,6 +202,11 @@ namespace nn::tensor
     }
 
     template <typename T>
+    void Tensor<T>::setTensorType(TensorType type) {
+        type_ = type;
+    }
+
+    template <typename T>
     void Tensor<T>::accumulateGrad(const xt::xarray<T>& add_grad) {
         if (grads_.shape() == add_grad.shape()) {
             grads_ += add_grad;

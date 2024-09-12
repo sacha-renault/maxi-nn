@@ -16,6 +16,10 @@
 
 namespace nn::tensor
 {
+    enum TensorType {
+        Input, Output, Parameter, None
+    };
+
     template <typename T>
     class Tensor{
     protected:
@@ -23,8 +27,9 @@ namespace nn::tensor
         xt::xarray<T> values_;
         xt::xarray<T> grads_;
 
-        // bools
+        // infos
         bool requires_grad_;
+        TensorType type_ = TensorType::None;
 
         // dimensions
         xt::dynamic_shape<size_t> dimensions_;
@@ -36,7 +41,7 @@ namespace nn::tensor
         // backward function
         std::shared_ptr<nn::Operation::IOperation<T>> stream_ptr;
 
-        // all constructor must be PRIVATE (we only want to use shared ptr)
+        // all constructor must be PRIVATE (we only want to use shared ptr with factory method)
         Tensor();
         Tensor(xt::dynamic_shape<size_t> dim, bool requires_grad = true);
         Tensor(xt::dynamic_shape<size_t> dim, xt::xarray<T> values, bool requires_grad = true);
@@ -51,6 +56,9 @@ namespace nn::tensor
         static std::shared_ptr<Tensor<T>> ones(xt::dynamic_shape<size_t> dim, bool requires_grad = true);
         static std::shared_ptr<Tensor<T>> random(xt::dynamic_shape<size_t> dim, T min = 0, T max = 1, bool requires_grad = true);
         static std::shared_ptr<Tensor<T>> normal(xt::dynamic_shape<size_t> dim, T mean = 0, T stddev = 1, bool requires_grad = true);
+
+        // set a type for the tensor
+        void setTensorType(TensorType type);
 
         // gradient
         void accumulateGrad(const xt::xarray<T>& add_grad);

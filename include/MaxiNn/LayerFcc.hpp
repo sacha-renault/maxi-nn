@@ -11,6 +11,10 @@ namespace nn::layers
             T limit = std::sqrt(6.0 / (num_input + num_output));
             weights_ = tensor::Tensor<T>::random({num_input, num_output}, -limit, limit);
             bias_ = tensor::Tensor<T>::zeros({1, num_output});
+
+            // Set the learnable to type param
+            weights_->setTensorType(TensorType::Parameter);
+            bias_->setTensorType(TensorType::Parameter);
         }
 
         Fcc(size_t num_input, size_t num_output, std::function<std::shared_ptr<tensor::Tensor<T>>(std::shared_ptr<tensor::Tensor<T>>)> activation)
