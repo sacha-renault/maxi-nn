@@ -42,37 +42,21 @@ int main() {
     auto input = tensor::FTensor::random({bs, 256}, -1, 1);
 
     float l1 = std::sqrt(6.0 / (256 + 128));
-    auto layer1 = tensor::FTensor::random({256, 128}, -l1, l1);
-    auto bias1 = tensor::FTensor::random({1, 128});
 
-    float l2 = std::sqrt(6.0 / (64 + 128));
-    auto layer2 = tensor::FTensor::random({128, 64}, -l2, l2);
-    auto bias2 = tensor::FTensor::random({1, 64});
+    auto layer1 = layers::FFcc(256, 128);
+    auto layer2 = layers::FFcc(128, 64);
+    auto layer3 = layers::FFcc(64, 32);
+    auto layer4 = layers::FFcc(32, 1);
 
-    float l3 = std::sqrt(6.0 / (64 + 32));
-    auto layer3 = tensor::FTensor::random({64, 32}, -l3, l3);
-    auto bias3 = tensor::FTensor::random({1, 32});
-
-    float l4 = std::sqrt(6.0 / (1 + 32));
-    auto layer4 = tensor::FTensor::random({32, outputsize}, -l4, l4);
-    auto bias4 = tensor::FTensor::random({1, outputsize});
-
-    auto weights = {layer1, bias1, layer2, bias2, layer3, bias3, layer4, bias4};
+    auto layers_vec = {layer1, layer2, layer3, layer4};
 
     auto y_true = tensor::FTensor::random({bs, outputsize}, -1, 1);
 
-    auto x = nn::math::dot(input, layer1);
-    x = x + bias1;
-    x = nn::math::tanh(x);
-    x = nn::math::dot(x, layer2);
-    x = x + bias2;
-    x = nn::math::tanh(x);
-    x = nn::math::dot(x, layer3);
-    x = x + bias3;
-    x = nn::math::tanh(x);
-    x = nn::math::dot(x, layer4);
-    x = x + bias4;
-    x = nn::math::tanh(x);
+    auto x = layer1(input);
+    x = layer2(x);
+    x = layer3(x);
+    x = layer4(x);
+
     auto batch_loss = nn::loss::meanSquaredError(x, y_true);
 
     auto graph = graph::FComputeGraph(batch_loss);
@@ -84,10 +68,16 @@ int main() {
         graph.backward();
 
 
-        for (auto node : weights) {
-            auto grads = node->getGrad();
-            auto values = node->getValues();
-            node->setValues(values - grads*lr);
+        for (auto node : layers_vec) {
+            auto w = node.getWeights();
+            auto gradsw = w->getGrad();
+            auto valuesw = w->getValues();
+            w->setValues(valuesw - gradsw*lr);
+
+            auto b = node.getWeights();
+            auto gradsb = b->getGrad();
+            auto valuesb = b->getValues();
+            b->setValues(valuesb - gradsb*lr);
         }
 
         std::cout << " iteration : " << i + 1 << " ; Loss : " << batch_loss->getItem({0}) << " ; LR : " << lr << std::endl;
