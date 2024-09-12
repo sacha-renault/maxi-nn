@@ -34,43 +34,127 @@ using namespace nn;
 // }
 
 int main() {
-    auto input = tensor::FTensor::normal({128, 784});
-    auto t2 = tensor::FTensor::normal({784, 256});
-    auto t3 = tensor::FTensor::normal({256, 128});
-    auto t4 = tensor::FTensor::normal({128, 32});
-    auto t5 = tensor::FTensor::normal({32, 10});
+    ulong bs = 128;
+    ulong outputsize = 1;
+    int num_epoch = 200;
+    float lr = 1e-2;
 
-    auto x = nn::math::dot(input, t2);
-    x = nn::math::tanh(x);
-    x = nn::math::dot(x, t3);
-    x = nn::math::tanh(x);
-    x = nn::math::dot(x, t4);
-    x = nn::math::tanh(x);
-    x = nn::math::dot(x, t5);
-    x = nn::math::tanh(x);
-    // auto n = neuron::Neuron<float>(3);
-    // auto output = n.forward(input);
+    auto input = tensor::FTensor::random({bs, 256}, -1, 1);
 
-    auto graph = graph::FComputeGraph(x);
-    graph.backward();
+    float l1 = std::sqrt(6.0 / (256 + 128));
+    auto layer1 = tensor::FTensor::random({256, 128}, -l1, l1);
+    auto bias1 = tensor::FTensor::random({1, 128});
 
-    for (int i = 0 ; i < 100 ; ++i) {
+    float l2 = std::sqrt(6.0 / (64 + 128));
+    auto layer2 = tensor::FTensor::random({128, 64}, -l2, l2);
+    auto bias2 = tensor::FTensor::random({1, 64});
+
+    float l3 = std::sqrt(6.0 / (64 + 32));
+    auto layer3 = tensor::FTensor::random({64, 32}, -l3, l3);
+    auto bias3 = tensor::FTensor::random({1, 32});
+
+    float l4 = std::sqrt(6.0 / (1 + 32));
+    auto layer4 = tensor::FTensor::random({32, outputsize}, -l4, l4);
+    auto bias4 = tensor::FTensor::random({1, outputsize});
+
+    auto weights = {layer1, bias1, layer2, bias2, layer3, bias3, layer4, bias4};
+
+    auto y_true = tensor::FTensor::random({bs, outputsize}, -1, 1);
+
+    auto x = nn::math::dot(input, layer1);
+    x = x + bias1;
+    x = nn::math::tanh(x);
+    x = nn::math::dot(x, layer2);
+    x = x + bias2;
+    x = nn::math::tanh(x);
+    x = nn::math::dot(x, layer3);
+    x = x + bias3;
+    x = nn::math::tanh(x);
+    x = nn::math::dot(x, layer4);
+    x = x + bias4;
+    x = nn::math::tanh(x);
+    auto batch_loss = nn::loss::meanSquaredError(x, y_true);
+
+    auto graph = graph::FComputeGraph(batch_loss);
+
+    for (int i = 0 ; i < num_epoch ; ++i) {
         auto rnd = tensor::FTensor::normal(input->shape());
-        input->fill(rnd->getValues());
         graph.forward();
-        std::cout << " iteration : " << i << std::endl;
+        graph.zeroGrad();
+        graph.backward();
+
+
+        for (auto node : weights) {
+            auto grads = node->getGrad();
+            auto values = node->getValues();
+            node->setValues(values - grads*lr);
+        }
+
+        std::cout << " iteration : " << i + 1 << " ; Loss : " << batch_loss->getItem({0}) << " ; LR : " << lr << std::endl;
     }
-    
-    // x->displayGrad();
 
-    // auto t1 = tensor::FTensor::random({5, 3});
-    // auto t2 = tensor::FTensor::random({1, 3});
-    // auto t3 = tensor::FTensor::random({ 1 });
-    // auto output = nn::math::reduceSum(t1 * t2, {1}) + t3;
-
-    // auto graph = graph::FComputeGraph(output);
-    // graph.backward();
-
-    // output->display();
     return 0;
 }
+
+// int main() {
+//     ulong bs = 1;
+//     ulong outputsize = 1;
+//     float lr = 1e-3;
+
+//     auto input = tensor::FTensor::normal({bs, 4});
+
+//     auto layer1 = tensor::FTensor::normal({4, 2});
+//     auto bias1 = tensor::FTensor::normal({1, 2});
+
+//     auto layer2 = tensor::FTensor::normal({2, 1});
+//     auto bias2 = tensor::FTensor::normal({1, 1});
+
+//     auto weights = {layer1, bias1, layer2, bias2};
+
+//     auto y_true = tensor::FTensor::normal({bs, outputsize});
+
+//     auto x = nn::math::dot(input, layer1);
+//     x = x + bias1;
+//     x = nn::math::tanh(x);
+//     x = nn::math::dot(x, layer2);
+//     x = x + bias2;
+//     x = nn::math::tanh(x);
+//     auto batch_loss = nn::loss::meanSquaredError(x, y_true);
+
+//     auto graph = graph::FComputeGraph(batch_loss);
+
+//     for (int i = 0 ; i < 100 ; ++i) {
+//         auto rnd = tensor::FTensor::normal(input->shape());
+//         input->fill(rnd->getValues());
+//         graph.forward();
+//         graph.zeroGrad();
+//         graph.backward();
+
+
+
+//         for (auto node : weights) {
+//             auto grads = node->getGrad();
+//             auto values = node->getValues();
+//             node->setValues(values - grads*lr);
+//         }
+
+//         std::cout << " Real : " << y_true->getItem({0}) <<std::endl;
+//         std::cout << " Output : " << x->getItem({0}) <<std::endl;
+//         std::cout << " iteration : " << i + 1 << " ; Loss : " << batch_loss->getItem({0}) <<std::endl;
+//         std::cout << " ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~" <<std::endl;
+//         // std::cout << "  Real : " << node->  << batch_loss->getItem({0}) <<std::endl;
+//     }
+
+//     // input->displayGrad();
+//     return 0;
+// }
+
+// int main() {
+//     auto y1 = tensor::FTensor::ones({128, 784}) * 0.5f;
+//     auto y2 = tensor::FTensor::zeros({128, 784});
+
+//     auto result = loss::meanAbsoluteError(y1, y2);
+
+//     result->display();
+//     return 0;
+// }

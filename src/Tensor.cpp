@@ -8,15 +8,15 @@ namespace nn::tensor
     Tensor<T>::Tensor() : total_size_(1), values_(0){}
 
     template <typename T>
-    Tensor<T>::Tensor(xt::dynamic_shape<size_t> dims, bool requires_grad) 
+    Tensor<T>::Tensor(xt::dynamic_shape<size_t> dims, bool requires_grad)
         : dimensions_(dims), requires_grad_(requires_grad), stream_ptr(nullptr)
     {
         // Calculate total size
         total_size_ = std::accumulate(dims.begin(), dims.end(), 1, std::multiplies<int>());
-        
+
         // Initialize values array with given dimensions
         values_ = xt::xarray<T>::from_shape(dims);
-        
+
         // Initialize gradient array if required
         if (requires_grad_) {
             grads_ = xt::zeros<T>(dims);
@@ -130,7 +130,16 @@ namespace nn::tensor
 
     template <typename T>
     void Tensor<T>::setGrad(xt::xarray<T> grads) {
-        grads_ = std::move(grads);
+        if (grads.shape() == grads_.shape()) {
+            grads_ = std::move(grads);
+        } else {
+            throw std::runtime_error("Cast is allowed only on grad accumulation");
+        }
+    }
+
+    template <typename T>
+    const xt::xarray<T>& Tensor<T>::getGrad() const {
+        return grads_;
     }
 
     template <typename T>
@@ -160,7 +169,11 @@ namespace nn::tensor
 
     template <typename T>
     void Tensor<T>::setValues(xt::xarray<T> new_values) {
-        values_ = new_values; // copy into values_
+        if (values_.shape() == new_values.shape()) {
+            values_ = std::move(new_values);
+        } else {
+            throw std::runtime_error("Cast is allowed only on grad accumulation");
+        }
     }
 
     template <typename T>
@@ -236,7 +249,7 @@ namespace nn::tensor
 
     template <typename T>
     void Tensor<T>::forward() {
-        if (stream_ptr) {          
+        if (stream_ptr) {
             // Create an array to hold all children's values
             std::vector<std::reference_wrapper<const xt::xarray<T>>> children_values;
 

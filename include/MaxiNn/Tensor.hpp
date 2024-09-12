@@ -55,6 +55,7 @@ namespace nn::tensor
         // gradient
         void accumulateGrad(const xt::xarray<T>& add_grad);
         void setGrad(xt::xarray<T> grads);
+        const xt::xarray<T>& getGrad() const;
         void resetGrad();
         void setOnesGrad();
         void addChild(std::shared_ptr<Tensor<T>> child);
