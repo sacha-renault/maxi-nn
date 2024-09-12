@@ -59,7 +59,7 @@ int main() {
 
     auto batch_loss = nn::loss::meanSquaredError(x, y_true);
 
-    auto graph = graph::FComputeGraph(batch_loss);
+    auto graph = graph::FComputationGraph(batch_loss);
 
     for (int i = 0 ; i < num_epoch ; ++i) {
         auto rnd = tensor::FTensor::normal(input->shape());
