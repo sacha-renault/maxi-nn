@@ -112,7 +112,7 @@ std::shared_ptr<Tensor<T>> operator/(T lhst, std::shared_ptr<Tensor<T>> rhs) {
     xt::xarray<T> valResult = nn::Operation::Div2<T>->forward({lhs->getValues(), rhs->getValues()});
 
     // get the result and create a tensor with same shape -> set the result data inside
-    std::shared_ptr<Tensor<T>> result = Tensor<T>::create(valResult.shape(), valResult, nn::Operation::Div2<T>);
+    std::shared_ptr<Tensor<T>> result = Tensor<T>::create(valResult, nn::Operation::Div2<T>);
 
     // add the two children in the result
     result->addChild(lhs);

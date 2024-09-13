@@ -4,44 +4,13 @@
 
 using namespace nn;
 
-// int main() {
-//     auto t1 = tensor::FTensor::random({2, 2});
-//     auto t2 = tensor::FTensor::random({2, 2});
-//     auto t3 = tensor::FTensor::normal({2, 2});
-//     (*t1)[{0,0}] = 0;
-
-//     auto y = FTensor::create({2,2}, true);
-//     y->fill(-1);
-//     (*y).getItem({0,0}) = 1;
-
-//     auto t5 = math::tanh(t1 * t2 - t3);
-//     auto t7 = loss::meanSquaredError(t5, y);
-//     // auto t5 = t1 * t2 - t3;
-
-//     auto graph = graph::FComputeGraph(t7);
-//     graph.backward();
-
-//     t7->display();
-//     y->display();
-//     t5->display();
-
-//     t5->displayGrad();
-//     t3->displayGrad();
-//     t2->displayGrad();
-//     t1->displayGrad();
-
-//     return 0;
-// }
-
 int main() {
     ulong bs = 12;
     ulong outputsize = 5;
     int num_epoch = 100;
     float lr = 1e-2;
 
-    auto input = tensor::FTensor::random({bs, 256}, -1, 1);
-
-    float l1 = std::sqrt(6.0 / (256 + 128));
+    auto input = tensor::FTensor::normal({bs, 256});
 
     auto layer1 = layers::FFcc(256, 128, nn::math::tanh<float>);
     auto layer2 = layers::FFcc(128, 64, nn::math::tanh<float>);
@@ -96,97 +65,3 @@ int main() {
 
     return 0;
 }
-
-// int main() {
-//     ulong bs = 1;
-//     ulong outputsize = 1;
-//     float lr = 1e-3;
-
-//     auto input = tensor::FTensor::normal({bs, 4});
-
-//     auto layer1 = tensor::FTensor::normal({4, 2});
-//     auto bias1 = tensor::FTensor::normal({1, 2});
-
-//     auto layer2 = tensor::FTensor::normal({2, 1});
-//     auto bias2 = tensor::FTensor::normal({1, 1});
-
-//     auto weights = {layer1, bias1, layer2, bias2};
-
-//     auto y_true = tensor::FTensor::normal({bs, outputsize});
-
-//     auto x = nn::math::dot(input, layer1);
-//     x = x + bias1;
-//     x = nn::math::tanh(x);
-//     x = nn::math::dot(x, layer2);
-//     x = x + bias2;
-//     x = nn::math::tanh(x);
-//     auto batch_loss = nn::loss::meanSquaredError(x, y_true);
-
-//     auto graph = graph::FComputeGraph(batch_loss);
-
-//     for (int i = 0 ; i < 100 ; ++i) {
-//         auto rnd = tensor::FTensor::normal(input->shape());
-//         input->fill(rnd->getValues());
-//         graph.forward();
-//         graph.zeroGrad();
-//         graph.backward();
-
-
-
-//         for (auto node : weights) {
-//             auto grads = node->getGrad();
-//             auto values = node->getValues();
-//             node->setValues(values - grads*lr);
-//         }
-
-//         std::cout << " Real : " << y_true->getItem({0}) <<std::endl;
-//         std::cout << " Output : " << x->getItem({0}) <<std::endl;
-//         std::cout << " iteration : " << i + 1 << " ; Loss : " << batch_loss->getItem({0}) <<std::endl;
-//         std::cout << " ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~" <<std::endl;
-//         // std::cout << "  Real : " << node->  << batch_loss->getItem({0}) <<std::endl;
-//     }
-
-//     // input->displayGrad();
-//     return 0;
-// }
-
-// int main() {
-//     auto input = tensor::FTensor::create({
-//         {0.2, 1 ,0.2},
-//         {0.5, 0.5, 0.5}
-//     });
-//     auto y = tensor::FTensor::create({
-//         {0, 1 ,0},
-//         {0, 0, 1}
-//     });
-
-//     auto output = nn::math::softmax(input);
-//     auto log_prod = math::log(output + 1e-10f) * y;
-//     float opp = -1;
-//     auto b_cce = opp * math::reduceSum(log_prod, {1});
-//     auto result = math::reduceMean(b_cce);
-//     auto graph = graph::FComputationGraph(result);
-//     graph.backward();
-
-//     std::cout << " Loss " << std::endl;
-//     result->display();
-//     result->displayGrad();
-
-//     std::cout << " b_cce " << std::endl;
-//     b_cce->display();
-//     b_cce->displayGrad();
-
-//     std::cout << " log_prod " << std::endl;
-//     log_prod->display();
-//     log_prod->displayGrad();
-    
-//     std::cout << " output " << std::endl;
-//     output->display();
-//     output->displayGrad();
-
-//     std::cout << " input " << std::endl;
-//     input->display();
-//     input->displayGrad();
-//     return 0;
-// }
-
