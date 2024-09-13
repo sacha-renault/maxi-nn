@@ -50,8 +50,8 @@ namespace nn::tensor
         // static factory method
         static std::shared_ptr<Tensor<T>> create();
         static std::shared_ptr<Tensor<T>> create(xt::dynamic_shape<size_t> dim, bool requires_grad = true);
-        static std::shared_ptr<Tensor<T>> create(xt::dynamic_shape<size_t> dim, xt::xarray<T> values, bool requires_grad = true);
-        static std::shared_ptr<Tensor<T>> create(xt::dynamic_shape<size_t> dim, xt::xarray<T> values, std::shared_ptr<nn::Operation::IOperation<T>> stream, bool requires_grad = true);
+        static std::shared_ptr<Tensor<T>> create(xt::xarray<T> values, bool requires_grad = true);
+        static std::shared_ptr<Tensor<T>> create(xt::xarray<T> values, std::shared_ptr<nn::Operation::IOperation<T>> stream, bool requires_grad = true);
         static std::shared_ptr<Tensor<T>> zeros(xt::dynamic_shape<size_t> dim, bool requires_grad = true);
         static std::shared_ptr<Tensor<T>> ones(xt::dynamic_shape<size_t> dim, bool requires_grad = true);
         static std::shared_ptr<Tensor<T>> random(xt::dynamic_shape<size_t> dim, T min = 0, T max = 1, bool requires_grad = true);

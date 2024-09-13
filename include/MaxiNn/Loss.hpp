@@ -23,10 +23,9 @@ namespace nn::loss
         // to avoid log(0)
         auto log_prod = math::log(pred + epsilon) * real;
 
-        // sum over the axis 0 to have (bs, )
+        // sum over the axis 1 to have (bs, )
         T opp = (T)-1;
-        auto b_cce = math::reduceSum(opp * log_prod, {1});
-        std::cout << xt::adapt(b_cce->shape()) << std::endl;
+        auto b_cce = opp * math::reduceSum(log_prod, {1});
 
         return math::reduceMean(b_cce);
     }

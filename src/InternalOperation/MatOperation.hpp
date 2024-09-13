@@ -69,7 +69,20 @@ namespace nn::Operation
                     for (size_t ax : axis) {
                         product *= shape[ax];
                     }
-                    grad_wrt_input[0] = xt::broadcast(output_grads, child.shape()) / product;
+                    
+                    // Set 1 in the axes where reduction happened
+                    auto target = child.shape();
+                    int i = 0;
+                    for (std::size_t i = 0; i < target.size(); ++i) {
+                        if (std::find(axis.begin(), axis.end(), i) != axis.end()) {
+                            target[i] = 1;  // Reduction axis will be 1
+                        }
+                    }
+
+                    xt::xarray<float> output_grads_xarray = output_grads;
+                    auto reshaped_grads = output_grads_xarray.reshape(target);
+                    auto broadcasted = xt::broadcast(reshaped_grads, child.shape());
+                    grad_wrt_input[0] = broadcasted / product;
                 }
                 return grad_wrt_input;
             }
@@ -116,12 +129,9 @@ namespace nn::Operation
                         }
                     }
 
-                    // TODO
-                    auto reshaped_grads = output_grads.reshape(target);
-                    auto broadcasted = xt::broadcast(output_grads, child.shape());
-                    std::cout << "Broadcast " << xt::adapt(broadcasted.shape()) << std::endl;
-                    std::cout <<  "Child " <<xt::adapt(child.shape()) << std::endl;
-                    std::cout << "Target "<<xt::adapt(target) << std::endl;
+                    xt::xarray<float> output_grads_xarray = output_grads;
+                    auto reshaped_grads = output_grads_xarray.reshape(target);
+                    auto broadcasted = xt::broadcast(reshaped_grads, child.shape());
                     grad_wrt_input[0] = broadcasted;
                 }
                 return grad_wrt_input;
@@ -159,17 +169,18 @@ namespace nn::Operation
         [](const std::vector<std::reference_wrapper<const xt::xarray<T>>>& children_values,
            const xt::xarray<T>& output_vals,
            const xt::xarray<T>& output_grads) -> std::vector<xt::xarray<T>> {
-                const auto& child = children_values[0].get();
-            // Compute gradients
-            // Use the Jacobian matrix of the softmax function
-            auto eye = xt::eye(output_vals.shape(1));
 
-            // Compute the Jacobian
-            auto J = xt::expand_dims(output_vals, 1) * ((xt::expand_dims(eye, 0) - xt::expand_dims(output_vals, 2)));
-            auto localGrad = xt::sum(J, {2}); // sum over z axis to get same shape as grad of tensor
+            // // Use the Jacobian matrix of the softmax function
+            // auto eye = xt::eye(output_vals.shape(1));
 
-            // computation of global gradient
-            auto d_softmax = localGrad * output_grads;
+            // // Compute the Jacobian
+            // auto J = xt::expand_dims(output_vals, 1) * ((xt::expand_dims(eye, 0) - xt::expand_dims(output_vals, 2)));
+            // // std::cout << xt::adapt(J.shape()) << std::endl;
+            // // std::cout << xt::adapt(J.shape()) << std::endl;
+            // auto localGrad = xt::sum(J, {1}); // sum over z axis to get same shape as grad of tensor
+
+            // // computation of global gradient
+            // auto d_softmax = localGrad * output_grads;
 
             // std::cout << "\nlocal : " << std::endl;
             // std::cout << localGrad << std::endl;
@@ -178,7 +189,32 @@ namespace nn::Operation
             // std::cout << "\nglobal : " << std::endl;
             // std::cout << d_softmax << std::endl;
 
-            return {d_softmax};
+            // return {d_softmax};
+
+            // Get the input logits (before softmax)
+            const xt::xarray<T>& logits = children_values[0].get();
+
+            // Get the softmax output (after softmax)
+            const xt::xarray<T>& softmax_output = output_vals;
+
+            // Initialize the gradient with respect to input
+            xt::xarray<T> input_grads = xt::zeros_like(logits);
+
+            // Iterate through each element to compute the gradient
+            for (std::size_t i = 0; i < softmax_output.shape()[0]; ++i) {
+                for (std::size_t j = 0; j < softmax_output.shape()[1]; ++j) {
+                    for (std::size_t k = 0; k < softmax_output.shape()[1]; ++k) {
+                        if (j == k) {
+                            input_grads(i, j) += output_grads(i, k) * softmax_output(i, j) * (1 - softmax_output(i, j));
+                        } else {
+                            input_grads(i, j) -= output_grads(i, k) * softmax_output(i, j) * softmax_output(i, k);
+                        }
+                    }
+                }
+            }
+
+            // Return the gradient with respect to the input logits
+            return {input_grads};
         }
     );
 } // namespace nn::Operation

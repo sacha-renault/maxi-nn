@@ -10,7 +10,7 @@ namespace nn::math
         xt::xarray<T> valResult = nn::Operation::ReLU<T>->forward({input->getValues()});
 
         // get the result and create a tensor with same shape -> set the result data inside 
-        auto result = tensor::Tensor<T>::create(valResult.shape(), valResult, nn::Operation::ReLU<T>);
+        auto result = tensor::Tensor<T>::create(valResult, nn::Operation::ReLU<T>);
 
         result->addChild(input);
         return result;
@@ -22,7 +22,7 @@ namespace nn::math
         xt::xarray<T> valResult = nn::Operation::Tanh<T>->forward({input->getValues()});
 
         // get the result and create a tensor with same shape -> set the result data inside 
-        auto result = tensor::Tensor<T>::create(valResult.shape(), valResult, nn::Operation::Tanh<T>);
+        auto result = tensor::Tensor<T>::create(valResult, nn::Operation::Tanh<T>);
 
         result->addChild(input);
         return result;
@@ -34,7 +34,7 @@ namespace nn::math
         xt::xarray<T> valResult = nn::Operation::Pow<T>(exponent)->forward({input->getValues()});
 
         // get the result and create a tensor with same shape -> set the result data inside 
-        auto result = tensor::Tensor<T>::create(valResult.shape(), valResult, nn::Operation::Pow<T>(exponent));
+        auto result = tensor::Tensor<T>::create(valResult, nn::Operation::Pow<T>(exponent));
 
         result->addChild(input);
         return result;
@@ -46,7 +46,7 @@ namespace nn::math
         xt::xarray<T> valResult = nn::Operation::Abs<T>->forward({input->getValues()});
 
         // get the result and create a tensor with same shape -> set the result data inside 
-        auto result = tensor::Tensor<T>::create(valResult.shape(), valResult, nn::Operation::Abs<T>);
+        auto result = tensor::Tensor<T>::create(valResult, nn::Operation::Abs<T>);
 
         result->addChild(input);
         return result;
@@ -58,7 +58,7 @@ namespace nn::math
         xt::xarray<T> valResult = nn::Operation::Exp<T>->forward({input->getValues()});
 
         // get the result and create a tensor with same shape -> set the result data inside 
-        auto result = tensor::Tensor<T>::create(valResult.shape(), valResult, nn::Operation::Exp<T>);
+        auto result = tensor::Tensor<T>::create(valResult, nn::Operation::Exp<T>);
 
         result->addChild(input);
         return result;
@@ -70,7 +70,7 @@ namespace nn::math
         xt::xarray<T> valResult = nn::Operation::Log<T>->forward({input->getValues()});
 
         // get the result and create a tensor with same shape -> set the result data inside 
-        auto result = tensor::Tensor<T>::create(valResult.shape(), valResult, nn::Operation::Log<T>);
+        auto result = tensor::Tensor<T>::create(valResult, nn::Operation::Log<T>);
 
         result->addChild(input);
         return result;
@@ -82,7 +82,7 @@ namespace nn::math
         xt::xarray<T> valResult = nn::Operation::Sqrt<T>->forward({input->getValues()});
 
         // get the result and create a tensor with same shape -> set the result data inside 
-        auto result = tensor::Tensor<T>::create(valResult.shape(), valResult, nn::Operation::Sqrt<T>);
+        auto result = tensor::Tensor<T>::create(valResult, nn::Operation::Sqrt<T>);
 
         result->addChild(input);
         return result;
@@ -94,7 +94,7 @@ namespace nn::math
         xt::xarray<T> valResult = nn::Operation::Clip<T>(min, max)->forward({input->getValues()});
 
         // get the result and create a tensor with same shape -> set the result data inside 
-        auto result = tensor::Tensor<T>::create(valResult.shape(), valResult, nn::Operation::Clip<T>(min, max));
+        auto result = tensor::Tensor<T>::create(valResult, nn::Operation::Clip<T>(min, max));
 
         result->addChild(input);
         return result;

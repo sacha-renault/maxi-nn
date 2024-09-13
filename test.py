@@ -11,14 +11,36 @@ y = torch.Tensor([
 ]).requires_grad_(True)
 
 soft_output = torch.softmax(input, 1)
-print(soft_output.detach().numpy())
-loss = torch.nn.CrossEntropyLoss()(soft_output, y)
+# print(soft_output.detach().numpy())
+
+log_pred = torch.log(soft_output + 1e-10) * y
+bloss = -torch.sum(log_pred, dim=1)
+loss = bloss.mean()
+
+soft_output.retain_grad()
+log_pred.retain_grad()
+bloss.retain_grad()
+loss.retain_grad()
 loss.backward()
 
 
 # Print the loss value
-print("Loss:", loss.item())
+print("loss")
+print(loss.detach().numpy())
+print(loss.grad)
 
-# Print gradients for the input tensor
-print("Gradients for input tensor:")
+print("bloss")
+print(bloss.detach().numpy())
+print(bloss.grad)
+
+print("log_pred")
+print(log_pred.detach().numpy())
+print(log_pred.grad)
+
+print("soft_output")
+print(soft_output.detach().numpy())
+print(soft_output.grad)
+
+print("input")
+print(input.detach().numpy())
 print(input.grad)
