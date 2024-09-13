@@ -50,26 +50,26 @@ namespace nn::tensor
     }
 
     template <typename T>
-    std::shared_ptr<Tensor<T>> Tensor<T>::create(xt::dynamic_shape<size_t> dim, xt::xarray<T> values, bool requires_grad) {
-        return std::shared_ptr<Tensor<T>>(new Tensor<T>(dim, values, requires_grad));
+    std::shared_ptr<Tensor<T>> Tensor<T>::create(xt::xarray<T> values, bool requires_grad) {
+        return std::shared_ptr<Tensor<T>>(new Tensor<T>(values.shape(), values, requires_grad));
     }
 
     template <typename T>
-    std::shared_ptr<Tensor<T>> Tensor<T>::create(xt::dynamic_shape<size_t> dim, xt::xarray<T> values, std::shared_ptr<nn::Operation::IOperation<T>> stream, bool requires_grad) {
-        return std::shared_ptr<Tensor<T>>(new Tensor<T>(dim, values, stream, requires_grad));
+    std::shared_ptr<Tensor<T>> Tensor<T>::create(xt::xarray<T> values, std::shared_ptr<nn::Operation::IOperation<T>> stream, bool requires_grad) {
+        return std::shared_ptr<Tensor<T>>(new Tensor<T>(values.shape(), values, stream, requires_grad));
     }
 
     template <typename T>
     std::shared_ptr<Tensor<T>> Tensor<T>::zeros(xt::dynamic_shape<size_t> dims, bool requires_grad) {
         auto values = xt::zeros<T>(dims);
-        auto new_tensor = Tensor::create(dims, values, requires_grad);
+        auto new_tensor = Tensor::create(values, requires_grad);
         return new_tensor;
     }
 
     template <typename T>
     std::shared_ptr<Tensor<T>> Tensor<T>::ones(xt::dynamic_shape<size_t> dims, bool requires_grad) {
         auto values = xt::ones<T>(dims);
-        auto new_tensor = Tensor::create(dims, values, requires_grad);
+        auto new_tensor = Tensor::create(values, requires_grad);
         return new_tensor;
     }
 
@@ -84,7 +84,7 @@ namespace nn::tensor
         while (it != values.end()) {
             *it++ = dis(gen);
         }
-        auto new_tensor = Tensor::create(dims, values, requires_grad);
+        auto new_tensor = Tensor::create(values, requires_grad);
         return new_tensor;
     }
 
@@ -99,7 +99,7 @@ namespace nn::tensor
         while (it != values.end()) {
             *it++ = dis(gen);
         }
-        auto new_tensor = Tensor::create(dims, values, requires_grad);
+        auto new_tensor = Tensor::create(values, requires_grad);
         return new_tensor;
     }
 

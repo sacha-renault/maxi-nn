@@ -69,7 +69,20 @@ namespace nn::Operation
                     for (size_t ax : axis) {
                         product *= shape[ax];
                     }
-                    grad_wrt_input[0] = xt::broadcast(output_grads, child.shape()) / product;
+                    
+                    // Set 1 in the axes where reduction happened
+                    auto target = child.shape();
+                    int i = 0;
+                    for (std::size_t i = 0; i < target.size(); ++i) {
+                        if (std::find(axis.begin(), axis.end(), i) != axis.end()) {
+                            target[i] = 1;  // Reduction axis will be 1
+                        }
+                    }
+
+                    xt::xarray<float> output_grads_xarray = output_grads;
+                    auto reshaped_grads = output_grads_xarray.reshape(target);
+                    auto broadcasted = xt::broadcast(reshaped_grads, child.shape());
+                    grad_wrt_input[0] = broadcasted / product;
                 }
                 return grad_wrt_input;
             }
@@ -107,11 +120,64 @@ namespace nn::Operation
                     // If no axis is provided, replicate the gradient to match the input shape
                     grad_wrt_input[0] = xt::broadcast(output_grads, child.shape());
                 } else {
-                    // Expand gradients to the shape of the original input
-                    grad_wrt_input[0] = xt::broadcast(output_grads, child.shape());
+                    // Set 1 in the axes where reduction happened
+                    auto target = child.shape();
+                    int i = 0;
+                    for (std::size_t i = 0; i < target.size(); ++i) {
+                        if (std::find(axis.begin(), axis.end(), i) != axis.end()) {
+                            target[i] = 1;  // Reduction axis will be 1
+                        }
+                    }
+
+                    xt::xarray<float> output_grads_xarray = output_grads;
+                    auto reshaped_grads = output_grads_xarray.reshape(target);
+                    auto broadcasted = xt::broadcast(reshaped_grads, child.shape());
+                    grad_wrt_input[0] = broadcasted;
                 }
                 return grad_wrt_input;
             }
         );
     }
+
+    template <typename T>
+    std::shared_ptr<IOperation<T>> SoftmaxDim1 = std::make_shared<IOperation<T>>(
+        [](const std::vector<std::reference_wrapper<const xt::xarray<T>>>& children_values) -> xt::xarray<T> {
+            // Ensure 1 child
+            if (children_values.size() != 1) {
+                throw std::runtime_error("Softmax must have exactly one children");
+            }
+
+            // Get ref
+            const auto& child = children_values[0].get();
+
+            // Ensure rank
+            if (child.shape().size() != 2 || child.shape({1}) == 1) {
+                throw std::runtime_error("Softmax must have (bs, num_input) as input");
+            }
+
+            // compute softmax batch-wise
+            xt::xarray<T> max_vals = xt::amax(child, {1}, xt::keep_dims);
+            xt::xarray<T> exp_vals = xt::exp(child - max_vals);
+            xt::xarray<T> sum_exp_vals = xt::sum(exp_vals, {1}, xt::keep_dims);
+
+            // Add a small constant to avoid division by zero
+            const T epsilon = 1e-10;
+            sum_exp_vals += epsilon;
+
+            return exp_vals / sum_exp_vals;
+        },
+        [](const std::vector<std::reference_wrapper<const xt::xarray<T>>>& children_values,
+           const xt::xarray<T>& output_vals,
+           const xt::xarray<T>& output_grads) -> std::vector<xt::xarray<T>> {
+            // dot prod on last axis
+            xt::xarray<T> dot_product = xt::sum(output_vals * output_grads, {1});
+            xt::xarray<T> dot_product_expanded = xt::expand_dims(dot_product, 1);
+
+            // Compute the gradient with respect to the input logits
+            xt::xarray<T> input_grads = output_grads * output_vals - output_vals * dot_product_expanded;
+
+            // Return the gradient with respect to the input logits
+            return {input_grads};
+        }
+    );
 } // namespace nn::Operation

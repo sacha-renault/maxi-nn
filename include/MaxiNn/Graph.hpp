@@ -27,5 +27,5 @@ namespace nn::graph
         void zeroGrad();
     };
 
-    using FComputeGraph = ComputationGraph<float>;
+    using FComputationGraph = ComputationGraph<float>;
 } // namespace nn::gradient

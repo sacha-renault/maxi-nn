@@ -34,9 +34,9 @@ using namespace nn;
 // }
 
 int main() {
-    ulong bs = 128;
-    ulong outputsize = 1;
-    int num_epoch = 500;
+    ulong bs = 12;
+    ulong outputsize = 5;
+    int num_epoch = 100;
     float lr = 1e-2;
 
     auto input = tensor::FTensor::random({bs, 256}, -1, 1);
@@ -46,24 +46,31 @@ int main() {
     auto layer1 = layers::FFcc(256, 128, nn::math::tanh<float>);
     auto layer2 = layers::FFcc(128, 64, nn::math::tanh<float>);
     auto layer3 = layers::FFcc(64, 32, nn::math::tanh<float>);
-    auto layer4 = layers::FFcc(32, outputsize, nn::math::tanh<float>);
+    auto layer4 = layers::FFcc(32, outputsize, nn::math::softmax<float>);
 
     auto layers_vec = {layer1, layer2, layer3, layer4};
 
-    auto y_true = tensor::FTensor::random({bs, outputsize}, -1, 1);
+    auto y_true = tensor::FTensor::zeros({bs, outputsize});
+
+    for (size_t i = 0 ; i < bs ; ++i) {
+        y_true->getItem({i, i % outputsize}) = 1;
+    }
 
     auto x = layer1(input);
     x = layer2(x);
     x = layer3(x);
     x = layer4(x);
 
-    auto batch_loss = nn::loss::meanSquaredError(x, y_true);
+    auto batch_loss = nn::loss::categoricalCrossEntropy(x, y_true);
 
-    auto graph = graph::FComputeGraph(batch_loss);
+    auto graph = graph::FComputationGraph(batch_loss);
 
     for (int i = 0 ; i < num_epoch ; ++i) {
         auto rnd = tensor::FTensor::normal(input->shape());
         graph.forward();
+
+        // std::cout << x->getValues() << std::endl;
+
         graph.zeroGrad();
         graph.backward();
 
@@ -144,11 +151,42 @@ int main() {
 // }
 
 // int main() {
-//     auto y1 = tensor::FTensor::ones({128, 784}) * 0.5f;
-//     auto y2 = tensor::FTensor::zeros({128, 784});
+//     auto input = tensor::FTensor::create({
+//         {0.2, 1 ,0.2},
+//         {0.5, 0.5, 0.5}
+//     });
+//     auto y = tensor::FTensor::create({
+//         {0, 1 ,0},
+//         {0, 0, 1}
+//     });
 
-//     auto result = loss::meanAbsoluteError(y1, y2);
+//     auto output = nn::math::softmax(input);
+//     auto log_prod = math::log(output + 1e-10f) * y;
+//     float opp = -1;
+//     auto b_cce = opp * math::reduceSum(log_prod, {1});
+//     auto result = math::reduceMean(b_cce);
+//     auto graph = graph::FComputationGraph(result);
+//     graph.backward();
 
+//     std::cout << " Loss " << std::endl;
 //     result->display();
+//     result->displayGrad();
+
+//     std::cout << " b_cce " << std::endl;
+//     b_cce->display();
+//     b_cce->displayGrad();
+
+//     std::cout << " log_prod " << std::endl;
+//     log_prod->display();
+//     log_prod->displayGrad();
+    
+//     std::cout << " output " << std::endl;
+//     output->display();
+//     output->displayGrad();
+
+//     std::cout << " input " << std::endl;
+//     input->display();
+//     input->displayGrad();
 //     return 0;
 // }
+
