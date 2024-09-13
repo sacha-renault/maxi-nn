@@ -6,7 +6,7 @@ using namespace nn;
 
 int main() {
     ulong bs = 16;
-    ulong b_number = 128; 
+    ulong b_number = 16; 
     ulong outputsize = 5;
     int num_epoch = 100;
     float lr = 1e-2;
