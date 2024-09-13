@@ -81,6 +81,7 @@ namespace nn::tensor
         const xt::xarray<T>& getValues();
         T& operator[](const xt::xindex& idx);
         T& getItem(const xt::xindex& idx);
+        std::shared_ptr<Tensor<T>> slice(const xt::xstrided_slice_vector& slices) const;
 
         // size etc...
         int size() const;

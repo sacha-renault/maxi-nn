@@ -5,5 +5,5 @@
 #include "MaxiNn/Operator.hpp"
 #include "MaxiNn/TensorwiseMath.hpp"
 #include "MaxiNn/ElementwiseMath.hpp"
-
+#include "MaxiNn/Strides.hpp"
 

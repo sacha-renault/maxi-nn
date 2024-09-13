@@ -268,6 +268,21 @@ namespace nn::tensor
         }
     }
 
+    template <typename T>
+    std::shared_ptr<nn::tensor::Tensor<T>> nn::tensor::Tensor<T>::slice(const xt::xstrided_slice_vector& slices) const {
+        // Perform slicing using xt::view
+        auto sliced_values = xt::strided_view(values_, slices);
+
+        // Create a new Tensor with the sliced values
+        auto slice_tensor = Tensor<T>::create(sliced_values, requires_grad_);
+        
+        if (requires_grad_) {
+            auto sliced_grads = xt::strided_view(grads_, slices);
+            slice_tensor->setGrad(sliced_grads);
+        }
+        return slice_tensor;
+    }
+
 
     // explicit instanciation of the class
     template class Tensor<float>;
