@@ -140,7 +140,7 @@ namespace nn::Operation
     }
 
     template <typename T>
-    std::shared_ptr<IOperation<T>> Softmax = std::make_shared<IOperation<T>>(
+    std::shared_ptr<IOperation<T>> SoftmaxDim1 = std::make_shared<IOperation<T>>(
         [](const std::vector<std::reference_wrapper<const xt::xarray<T>>>& children_values) -> xt::xarray<T> {
             // Ensure 1 child
             if (children_values.size() != 1) {
@@ -169,49 +169,12 @@ namespace nn::Operation
         [](const std::vector<std::reference_wrapper<const xt::xarray<T>>>& children_values,
            const xt::xarray<T>& output_vals,
            const xt::xarray<T>& output_grads) -> std::vector<xt::xarray<T>> {
+            // dot prod on last axis
+            xt::xarray<T> dot_product = xt::sum(output_vals * output_grads, {1});
+            xt::xarray<T> dot_product_expanded = xt::expand_dims(dot_product, 1);
 
-            // // Use the Jacobian matrix of the softmax function
-            // auto eye = xt::eye(output_vals.shape(1));
-
-            // // Compute the Jacobian
-            // auto J = xt::expand_dims(output_vals, 1) * ((xt::expand_dims(eye, 0) - xt::expand_dims(output_vals, 2)));
-            // // std::cout << xt::adapt(J.shape()) << std::endl;
-            // // std::cout << xt::adapt(J.shape()) << std::endl;
-            // auto localGrad = xt::sum(J, {1}); // sum over z axis to get same shape as grad of tensor
-
-            // // computation of global gradient
-            // auto d_softmax = localGrad * output_grads;
-
-            // std::cout << "\nlocal : " << std::endl;
-            // std::cout << localGrad << std::endl;
-            // std::cout << "\nparent grad : " << std::endl;
-            // std::cout << output_grads << std::endl;
-            // std::cout << "\nglobal : " << std::endl;
-            // std::cout << d_softmax << std::endl;
-
-            // return {d_softmax};
-
-            // Get the input logits (before softmax)
-            const xt::xarray<T>& logits = children_values[0].get();
-
-            // Get the softmax output (after softmax)
-            const xt::xarray<T>& softmax_output = output_vals;
-
-            // Initialize the gradient with respect to input
-            xt::xarray<T> input_grads = xt::zeros_like(logits);
-
-            // Iterate through each element to compute the gradient
-            for (std::size_t i = 0; i < softmax_output.shape()[0]; ++i) {
-                for (std::size_t j = 0; j < softmax_output.shape()[1]; ++j) {
-                    for (std::size_t k = 0; k < softmax_output.shape()[1]; ++k) {
-                        if (j == k) {
-                            input_grads(i, j) += output_grads(i, k) * softmax_output(i, j) * (1 - softmax_output(i, j));
-                        } else {
-                            input_grads(i, j) -= output_grads(i, k) * softmax_output(i, j) * softmax_output(i, k);
-                        }
-                    }
-                }
-            }
+            // Compute the gradient with respect to the input logits
+            xt::xarray<T> input_grads = output_grads * output_vals - output_vals * dot_product_expanded;
 
             // Return the gradient with respect to the input logits
             return {input_grads};

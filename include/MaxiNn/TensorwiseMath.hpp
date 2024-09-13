@@ -41,13 +41,16 @@ namespace nn::math
         return result;
     }
 
+    /// @brief softmax funtion on dimension 1 (expect tensor of shape (batch_size, num_inputs))
+    /// @param input tensor
+    /// @return softmaxed tensor
     template <typename T>
     std::shared_ptr<tensor::Tensor<T>> softmax(std::shared_ptr<tensor::Tensor<T>> input) {
         // First make a forward pass with the operation
-        xt::xarray<T> valResult = nn::Operation::Softmax<T>->forward({input->getValues()});
+        xt::xarray<T> valResult = nn::Operation::SoftmaxDim1<T>->forward({input->getValues()});
 
         // get the result and create a tensor with same shape -> set the result data inside
-        auto result = tensor::Tensor<T>::create(valResult, nn::Operation::Softmax<T>);
+        auto result = tensor::Tensor<T>::create(valResult, nn::Operation::SoftmaxDim1<T>);
 
         result->addChild(input);
         return result;
