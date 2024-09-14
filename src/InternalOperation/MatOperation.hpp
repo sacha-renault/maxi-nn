@@ -72,7 +72,6 @@ namespace nn::Operation
                     
                     // Set 1 in the axes where reduction happened
                     auto target = child.shape();
-                    int i = 0;
                     for (std::size_t i = 0; i < target.size(); ++i) {
                         if (std::find(axis.begin(), axis.end(), i) != axis.end()) {
                             target[i] = 1;  // Reduction axis will be 1
@@ -122,7 +121,6 @@ namespace nn::Operation
                 } else {
                     // Set 1 in the axes where reduction happened
                     auto target = child.shape();
-                    int i = 0;
                     for (std::size_t i = 0; i < target.size(); ++i) {
                         if (std::find(axis.begin(), axis.end(), i) != axis.end()) {
                             target[i] = 1;  // Reduction axis will be 1
