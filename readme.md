@@ -23,3 +23,9 @@
 ```sh
   sudo apt-get install libopenblas-dev
 ```
+
+- Setup pylib (might have some refactor to do)
+
+```sh
+python3 setup.py build_ext --inplace
+```
