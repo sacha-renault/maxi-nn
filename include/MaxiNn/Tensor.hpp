@@ -17,7 +17,7 @@
 namespace nn::tensor
 {
     enum TensorType {
-        Input, Output, Parameter, None
+        Input, Output, Parameter, None, View
     };
 
     template <typename T>
@@ -78,7 +78,6 @@ namespace nn::tensor
         const xt::xarray<T>& getValues() const;
         void fill(T value);
         void fill(xt::xarray<T> values);
-        const xt::xarray<T>& getValues();
         T& operator[](const xt::xindex& idx);
         T& getItem(const xt::xindex& idx);
         std::shared_ptr<Tensor<T>> slice(const xt::xstrided_slice_vector& slices) const;

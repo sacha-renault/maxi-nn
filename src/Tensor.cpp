@@ -124,11 +124,6 @@ namespace nn::tensor
     }
 
     template <typename T>
-    const xt::xarray<T>& Tensor<T>::getValues() {
-        return values_;
-    }
-
-    template <typename T>
     void Tensor<T>::setGrad(xt::xarray<T> grads) {
         if (grads.shape() == grads_.shape()) {
             grads_ = std::move(grads);
